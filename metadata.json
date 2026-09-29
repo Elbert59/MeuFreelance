@@ -1,0 +1,6 @@
+{
+  "name": "ChefMatch B2B - Freelancers da Gastronomia",
+  "description": "Plataforma B2B para contratação ágil de freelancers da gastronomia com pagamento retido em garantia (Escrow), check-in/out e avaliações mútuas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
