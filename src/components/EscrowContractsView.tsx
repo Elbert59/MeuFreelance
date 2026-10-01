@@ -436,17 +436,14 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
               {session.role === 'EMPRESA' && (
                 <div className="pt-2 border-t border-neutral-100">
                   {contract.status === 'PAGO_E_RETIDO' && (
-                    <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                    <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                          <KeyRound className="w-4 h-4 text-amber-700" />
-                          <span>PIN de Entrada do Restaurante (Check-in Presencial):</span>
-                          <span className="font-mono text-base font-black text-amber-900 bg-white px-2 py-0.5 rounded border border-amber-300">
-                            {contract.checkInPin || '8412'}
-                          </span>
+                          <Clock className="w-4 h-4 text-amber-700" />
+                          <span>Aguardando Início de Diária pelo Freelancer:</span>
                         </div>
-                        <p className="text-[11px] text-amber-800">
-                          Informe este código de 4 dígitos ao profissional na sua apresentação física à cozinha/balcão.
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                          O profissional deve iniciar a diária pelo aplicativo ao se apresentar ao restaurante. Você também pode confirmar o início de turno presencial diretamente.
                         </p>
                       </div>
 
@@ -459,12 +456,12 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                         {loadingAction === `checkin-${contract.id}` ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Validando...</span>
+                            <span>Iniciando...</span>
                           </>
                         ) : (
                           <>
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Confirmar Presença no Local</span>
+                            <span>Confirmar Início Presencial</span>
                           </>
                         )}
                       </button>
@@ -472,17 +469,14 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                   )}
 
                   {contract.status === 'CHECKIN_REALIZADO' && (
-                    <div className="p-3.5 rounded-xl bg-sky-50/80 border border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                    <div className="p-4 rounded-xl bg-sky-50/90 border border-sky-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 font-bold text-sky-950">
-                          <KeyRound className="w-4 h-4 text-sky-700" />
-                          <span>PIN de Saída / Liberação do Gerente:</span>
-                          <span className="font-mono text-base font-black text-sky-900 bg-white px-2 py-0.5 rounded border border-sky-300">
-                            {contract.checkOutPin || '5930'}
-                          </span>
+                        <div className="flex items-center gap-2 font-bold text-sky-950 text-sm">
+                          <Clock className="w-4 h-4 text-sky-700 animate-spin" />
+                          <span>Expediente em Andamento · Finalização Exclusiva do Gerente</span>
                         </div>
-                        <p className="text-[11px] text-sky-800">
-                          Expediente em andamento desde às {new Date(contract.checkInAt || Date.now()).toLocaleTimeString()}. Forneça o PIN de saída ao término do turno ou para autorizar dispensa antecipada.
+                        <p className="text-[11px] text-sky-800 leading-relaxed max-w-xl">
+                          Iniciado às {new Date(contract.checkInAt || Date.now()).toLocaleTimeString()} pelo profissional. Por segurança, apenas o gerente pode finalizar a diária e aprovar a conclusão do turno para liberação dos fundos em custódia.
                         </p>
                       </div>
 
@@ -490,17 +484,17 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                         type="button"
                         onClick={() => handleManagerCheckOut(contract)}
                         disabled={loadingAction === `checkout-${contract.id}`}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-colors shrink-0 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-extrabold text-xs transition-all shadow-md shadow-sky-600/20 shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         {loadingAction === `checkout-${contract.id}` ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Encerrando...</span>
+                            <span>Finalizando diária...</span>
                           </>
                         ) : (
                           <>
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>Encerrar Expediente como Gerente</span>
+                            <CheckCircle2 className="w-4 h-4 text-sky-200" />
+                            <span>Finalizar Diária & Homologar Término</span>
                           </>
                         )}
                       </button>
@@ -512,10 +506,10 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 font-black text-emerald-950 text-sm">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>Turno Concluído pelo Freelancer ({contract.shiftComplianceStatus || 'CONCLUIDO_NO_HORARIO'})</span>
+                          <span>Diária Finalizada pelo Gerente ({contract.shiftComplianceStatus || 'CONCLUIDO_NO_HORARIO'})</span>
                         </div>
                         <p className="text-[11px] text-emerald-800">
-                          {contract.workedMinutes ? `${contract.workedMinutes} minutos trabalhados.` : 'Horário cumprido.'} Inspecione a entrega do posto de trabalho e autorize o repasse do Pix garantido.
+                          {contract.workedMinutes ? `${contract.workedMinutes} minutos trabalhados.` : 'Horário homologado.'} Inspecione a entrega do posto de trabalho e autorize o repasse do Pix garantido.
                         </p>
                       </div>
 

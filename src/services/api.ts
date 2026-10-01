@@ -394,19 +394,19 @@ export const api = {
 
     if (payload.status) {
       if (payload.status === 'CHECKIN_REALIZADO') {
-        if (payload.callerRole === 'FREELANCER') {
-          if (!payload.pin || payload.pin.trim() !== updated.checkInPin) {
-            throw new Error(
-              `Bloqueio Antifraude: PIN de entrada incorreto. Solicite o PIN de 4 dígitos ao gerente do restaurante (${updated.companyName}) ao chegar no local.`
-            );
-          }
-        }
         updated.status = 'CHECKIN_REALIZADO';
         updated.checkInAt = payload.checkInAt || now;
         updated.shiftComplianceStatus = 'EM_ANDAMENTO';
       } else if (payload.status === 'CONCLUIDO') {
         if (!updated.checkInAt) {
-          throw new Error('Bloqueio Antifraude: Não é possível realizar check-out sem check-in validado previamente.');
+          throw new Error('Bloqueio de Segurança: Não é possível finalizar a diária sem que o início tenha sido registrado.');
+        }
+
+        // Apenas o gerente pode finalizar a diária!
+        if (payload.callerRole === 'FREELANCER') {
+          throw new Error(
+            'Permissão Negada: Apenas o gerente do estabelecimento pode finalizar a diária e aprovar a conclusão do expediente.'
+          );
         }
 
         const elapsedMinutes = payload.simulatedElapsedMinutes !== undefined
@@ -414,33 +414,12 @@ export const api = {
           : Math.max(0, Math.floor((new Date(now).getTime() - new Date(updated.checkInAt).getTime()) / (1000 * 60)));
         const minMinutes = updated.minShiftDurationMinutes || 360;
 
-        if (payload.callerRole === 'FREELANCER') {
-          const isPinValid = payload.pin && payload.pin.trim() === updated.checkOutPin;
-          const isEarly = elapsedMinutes < minMinutes;
-
-          if (isEarly && (!isPinValid || !payload.earlyExitReason)) {
-            const remainingMins = minMinutes - elapsedMinutes;
-            const remH = Math.floor(remainingMins / 60);
-            const remM = remainingMins % 60;
-            const formattedRemaining = remH > 0 ? `${remH}h ${remM}min` : `${remM}min`;
-            throw new Error(
-              `Bloqueio Antifraude: Tentativa de saída antecipada detectada (${elapsedMinutes}min de ${minMinutes}min contratados. Faltam ${formattedRemaining}). O encerramento prematuro exige o PIN de liberação do gerente (${updated.checkOutPin}) e uma justificativa.`
-            );
-          }
-
-          if (!isEarly && !isPinValid && !payload.managerApprovedOut) {
-            throw new Error(
-              `Bloqueio Antifraude: Insira o PIN de saída de 4 dígitos fornecido pelo gerente do restaurante (${updated.companyName}) para formalizar o encerramento do posto de trabalho.`
-            );
-          }
-        }
-
         updated.status = 'CONCLUIDO';
         updated.checkOutAt = now;
         updated.workedMinutes = elapsedMinutes;
         updated.earlyExitReason = payload.earlyExitReason;
-        updated.managerApprovedOut = !!(payload.managerApprovedOut || (payload.pin && payload.pin.trim() === updated.checkOutPin));
-        updated.shiftComplianceStatus = elapsedMinutes >= minMinutes ? 'CONCLUIDO_NO_HORARIO' : 'SAIDA_ANTECIPADA_AUTORIZADA';
+        updated.managerApprovedOut = true;
+        updated.shiftComplianceStatus = elapsedMinutes >= minMinutes ? 'CONCLUIDO_NO_HORARIO' : 'FINALIZADO_PELO_GERENTE';
       } else if (payload.status === 'VALOR_LIBERADO') {
         if (payload.callerRole === 'FREELANCER') {
           throw new Error(

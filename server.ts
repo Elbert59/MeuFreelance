@@ -295,12 +295,12 @@ class Database {
 
     this.contracts.unshift(newContract);
 
-    // Automatic escrow audit message in chat
+    // Automatic escrow audit message in chat (No security PIN exposed in shared chat)
     this.addChatMessage({
       contractId: newContract.id,
       senderRole: 'EMPRESA',
       senderName: 'Cofre Escrow ChefMatch',
-      content: `[Garantia B2B & Antifraude] Contrato firmado. Horário contratado: ${payload.shiftHours} (${parsedHours.formattedDuration}). PIN de entrada do restaurante: ${checkInPin}. Hash: ${escrowHash}.`,
+      content: `[Garantia B2B & Escrow] Contrato firmado. Horário contratado: ${payload.shiftHours} (${parsedHours.formattedDuration}). Valor 100% garantido em custódia. O freelancer inicia a diária pelo app e a finalização é realizada exclusivamente pelo gerente. Hash: ${escrowHash}.`,
     });
 
     return newContract;
@@ -344,36 +344,34 @@ class Database {
       }
 
       // ==========================================
-      // REGRA ANTIFRAUDE 1: VALIDAÇÃO DE CHECK-IN
+      // REGRA: INÍCIO DE DIÁRIA (O FREELANCER INICIA)
       // ==========================================
       if (updates.status === 'CHECKIN_REALIZADO') {
-        // Se chamado pelo freelancer, é obrigatório validar o PIN fornecido pelo restaurante presencialmente
-        if (updates.callerRole === 'FREELANCER') {
-          if (!updates.pin || updates.pin.trim() !== contract.checkInPin) {
-            throw new Error(
-              `Bloqueio Antifraude: PIN de entrada incorreto. Solicite o PIN de 4 dígitos ao gerente do restaurante (${contract.companyName}) ao chegar no local para confirmar seu início de turno.`
-            );
-          }
-        }
-
         contract.status = 'CHECKIN_REALIZADO';
         contract.checkInAt = updates.checkInAt || now;
         contract.shiftComplianceStatus = 'EM_ANDAMENTO';
         contract.auditTrail.push({
           timestamp: now,
-          action: 'CHECKIN_PRESENCIAL_VALIDADO',
-          details: updates.callerRole === 'EMPRESA'
-            ? 'Presença no local confirmada diretamente pelo gerente da empresa.'
-            : `Presença presencial autenticada com PIN do gerente (${updates.pin}).`,
+          action: 'INICIO_DIARIA_REGISTRADO',
+          details: updates.callerRole === 'FREELANCER'
+            ? `Diária iniciada pelo freelancer (${contract.freelancerName}) via aplicativo.`
+            : 'Presença no local confirmada diretamente pelo gerente da empresa.',
         });
       }
 
       // ==========================================
-      // REGRA ANTIFRAUDE 2: CUMPRIMENTO DO EXPEDIENTE (CHECK-OUT)
+      // REGRA: FINALIZAÇÃO DE DIÁRIA (APENAS O GERENTE)
       // ==========================================
       else if (updates.status === 'CONCLUIDO') {
         if (!contract.checkInAt) {
-          throw new Error('Bloqueio Antifraude: Não é possível realizar check-out sem check-in validado previamente.');
+          throw new Error('Bloqueio de Segurança: Não é possível finalizar a diária sem que o início tenha sido registrado.');
+        }
+
+        // Apenas o gerente pode finalizar a diária!
+        if (updates.callerRole === 'FREELANCER') {
+          throw new Error(
+            'Permissão Negada: Apenas o gerente do estabelecimento pode finalizar a diária e aprovar a conclusão do expediente.'
+          );
         }
 
         const elapsedMinutes = updates.simulatedElapsedMinutes !== undefined
@@ -381,40 +379,17 @@ class Database {
           : Math.max(0, Math.floor((new Date(now).getTime() - new Date(contract.checkInAt).getTime()) / (1000 * 60)));
         const minMinutes = contract.minShiftDurationMinutes || 360;
 
-        // Se a solicitação vier do Freelancer:
-        if (updates.callerRole === 'FREELANCER') {
-          const isPinValid = updates.pin && updates.pin.trim() === contract.checkOutPin;
-          const isEarly = elapsedMinutes < minMinutes;
-
-          if (isEarly && (!isPinValid || !updates.earlyExitReason)) {
-            const remainingMins = minMinutes - elapsedMinutes;
-            const remH = Math.floor(remainingMins / 60);
-            const remM = remainingMins % 60;
-            const formattedRemaining = remH > 0 ? `${remH}h ${remM}min` : `${remM}min`;
-            throw new Error(
-              `Bloqueio Antifraude: Tentativa de saída antecipada detectada (${elapsedMinutes}min trabalhados de ${minMinutes}min contratados. Faltam ${formattedRemaining}). O encerramento prematuro exige o PIN de liberação do gerente (${contract.checkOutPin}) e uma justificativa obrigatória.`
-            );
-          }
-
-          // Se cumprido no horário integral, exige validação do PIN de saída do restaurante
-          if (!isEarly && !isPinValid && !updates.managerApprovedOut) {
-            throw new Error(
-              `Bloqueio Antifraude: Insira o PIN de saída de 4 dígitos fornecido pelo gerente do restaurante (${contract.companyName}) para formalizar o encerramento do posto de trabalho.`
-            );
-          }
-        }
-
         contract.status = 'CONCLUIDO';
         contract.checkOutAt = now;
         contract.workedMinutes = elapsedMinutes;
         contract.earlyExitReason = updates.earlyExitReason ? sanitizeInput(updates.earlyExitReason, 200) : undefined;
-        contract.managerApprovedOut = !!(updates.managerApprovedOut || (updates.pin && updates.pin.trim() === contract.checkOutPin));
-        contract.shiftComplianceStatus = elapsedMinutes >= minMinutes ? 'CONCLUIDO_NO_HORARIO' : 'SAIDA_ANTECIPADA_AUTORIZADA';
+        contract.managerApprovedOut = true;
+        contract.shiftComplianceStatus = elapsedMinutes >= minMinutes ? 'CONCLUIDO_NO_HORARIO' : 'FINALIZADO_PELO_GERENTE';
 
         contract.auditTrail.push({
           timestamp: now,
-          action: 'CHECKOUT_VALIDADO',
-          details: `Expediente encerrado. Minutos trabalhados: ${elapsedMinutes}min de ${minMinutes}min. Status: ${contract.shiftComplianceStatus}.`,
+          action: 'DIARIA_FINALIZADA_GERENTE',
+          details: `Diária finalizada pelo gerente. Minutos trabalhados: ${elapsedMinutes}min de ${minMinutes}min. Status: ${contract.shiftComplianceStatus}.`,
         });
       }
 

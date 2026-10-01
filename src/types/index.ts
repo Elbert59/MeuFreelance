@@ -90,7 +90,7 @@ export interface Contract {
   checkOutPin?: string; // PIN seguro de 4 dígitos fornecido pelo gerente para aprovar liberação de saída
   minShiftDurationMinutes?: number; // Duração mínima calculada do expediente (em minutos)
   workedMinutes?: number; // Minutos reais trabalhados
-  shiftComplianceStatus?: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDO_NO_HORARIO' | 'SAIDA_ANTECIPADA_AUTORIZADA' | 'HORARIO_INCOMPLETO';
+  shiftComplianceStatus?: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDO_NO_HORARIO' | 'SAIDA_ANTECIPADA_AUTORIZADA' | 'HORARIO_INCOMPLETO' | 'FINALIZADO_PELO_GERENTE';
   managerApprovedOut?: boolean; // Validação expressa do contratante
   earlyExitReason?: string; // Justificativa auditável em caso de saída antecipada autorizada
   termsAcceptedAt?: string; // Data/Hora do aceite formal do Contrato de Prestação de Serviços (Freelance)
