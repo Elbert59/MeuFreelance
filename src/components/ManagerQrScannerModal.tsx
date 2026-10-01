@@ -3,6 +3,7 @@ import jsQR from 'jsqr';
 import type { Contract } from '../types';
 import { api } from '../services/api';
 import { parseDiariaQrToken, generateDiariaQrToken } from '../utils/qrcode';
+import { DeviceManager } from '../utils/deviceRepository';
 import {
   Camera,
   ScanLine,
@@ -18,6 +19,9 @@ import {
   ShieldCheck,
   Loader2,
   RefreshCw,
+  Keyboard,
+  ListCheck,
+  Smartphone,
 } from 'lucide-react';
 
 interface ManagerQrScannerModalProps {
@@ -35,8 +39,10 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
   onClose,
   onContractUpdated,
 }) => {
+  const [activeTab, setActiveTab] = useState<'camera' | 'manual' | 'quick'>('camera');
   const [hasCamera, setHasCamera] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [manualCodeInput, setManualCodeInput] = useState('');
   const [scannedResult, setScannedResult] = useState<{
     contract: Contract;
     type: 'CHECKIN' | 'CHECKOUT';
@@ -63,17 +69,18 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
       osc.start(audioCtx.currentTime);
       osc.stop(audioCtx.currentTime + 0.25);
-    } catch (e) {
-      // Audio not supported or blocked
-    }
+    } catch {}
   };
 
-  // Start Camera Stream when modal is open
+  // Start Camera Stream when modal is open and on camera tab
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || activeTab !== 'camera') {
       stopCamera();
-      setScannedResult(null);
-      setErrorMsg(null);
+      if (!isOpen) {
+        setScannedResult(null);
+        setErrorMsg(null);
+        setManualCodeInput('');
+      }
       return;
     }
 
@@ -82,13 +89,14 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
     return () => {
       stopCamera();
     };
-  }, [isOpen]);
+  }, [isOpen, activeTab]);
 
   const startCamera = async () => {
     setCameraError(null);
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraError('Câmera não suportada neste navegador.');
+        setCameraError('Câmera não suportada ou bloqueada pelo navegador neste dispositivo.');
+        setActiveTab('manual');
         return;
       }
 
@@ -105,11 +113,10 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
         requestAnimationFrame(tick);
       }
     } catch (err: any) {
-      console.warn('Camera access error or restricted:', err);
-      setCameraError(
-        'Acesso à câmera bloqueado ou não disponível. Use a detecção direta ou envio de foto abaixo.'
-      );
+      console.warn('[Scanner] Camera access error or restricted:', err);
+      setCameraError('Câmera não disponível ou permissão negada. Utilize a digitação manual de código abaixo.');
       setHasCamera(false);
+      setActiveTab('manual');
     }
   };
 
@@ -152,75 +159,42 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
     animFrameRef.current = requestAnimationFrame(tick);
   };
 
-  // Process Scanned QR Code
+  // Authoritative Process of Scanned QR Code
   const handleScannedData = async (rawData: string) => {
     if (isProcessing) return;
-
-    const parsed = parseDiariaQrToken(rawData);
-    if (!parsed) {
-      setErrorMsg('QR Code não reconhecido ou formato inválido para a plataforma ChefMatch.');
-      return;
-    }
-
-    // Find the referenced contract
-    const foundContract = contracts.find((c) => c.id === parsed.contractId) || targetContract;
-    if (!foundContract) {
-      setErrorMsg(`Contrato de diária ID #${parsed.contractId} não encontrado no restaurante.`);
-      return;
-    }
-
-    playBeep();
-    if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
 
     setIsProcessing(true);
     setErrorMsg(null);
 
     try {
-      let updated: Contract;
-      if (parsed.type === 'CHECKIN') {
-        updated = await api.updateContract({
-          contractId: foundContract.id,
-          status: 'CHECKIN_REALIZADO',
-          callerRole: 'EMPRESA',
-          startQrToken: rawData,
-        });
-      } else {
-        updated = await api.updateContract({
-          contractId: foundContract.id,
-          status: 'CONCLUIDO',
-          callerRole: 'EMPRESA',
-          endQrToken: rawData,
-          managerApprovedOut: true,
-        });
-      }
+      // Call Authoritative Multi-Device Scan API
+      const result = await api.scanQrCode({
+        qrToken: rawData.trim(),
+        callerRole: 'EMPRESA',
+        managerDeviceId: DeviceManager.getDeviceId(),
+      });
 
-      onContractUpdated(updated);
+      playBeep();
+      if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+
+      onContractUpdated(result.contract);
       setScannedResult({
-        contract: updated,
-        type: parsed.type,
+        contract: result.contract,
+        type: result.type,
         timestamp: Date.now(),
       });
       stopCamera();
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro ao processar leitura do QR code.');
+      setErrorMsg(err?.message || 'Código ou token inválido para validação da diária.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Direct Auto-Scan Simulation (Essential for preview environments)
-  const handleDirectScanContract = async (c: Contract) => {
-    setIsProcessing(true);
-    setErrorMsg(null);
-    try {
-      const type = c.status === 'PAGO_E_RETIDO' ? 'CHECKIN' : 'CHECKOUT';
-      const syntheticToken = generateDiariaQrToken(c.id, type, c.freelancerId);
-      await handleScannedData(syntheticToken);
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro ao processar leitura.');
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualCodeInput.trim()) return;
+    handleScannedData(manualCodeInput.trim());
   };
 
   // Image Upload Scanner
@@ -274,7 +248,7 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-neutral-950 font-mono text-[10px] font-black tracking-wider uppercase flex items-center gap-1">
               <Camera className="w-3 h-3" />
-              Scanner do Gerente
+              Scanner do Gerente · Live Sync
             </span>
           </div>
 
@@ -282,8 +256,50 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
             Escanear QR Code do Freelancer
           </h2>
           <p className="text-xs text-neutral-300 mt-1">
-            Aponte a câmera para o QR Code no celular do profissional para iniciar ou finalizar o turno com validação presencial.
+            Validação presencial conectada com o aparelho do freelancer em tempo real.
           </p>
+
+          {/* Navigation Tabs */}
+          {!scannedResult && (
+            <div className="flex gap-1 mt-4 p-1 bg-white/10 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setActiveTab('camera')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'camera'
+                    ? 'bg-amber-500 text-neutral-950 shadow-xs'
+                    : 'text-neutral-300 hover:text-white'
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                Câmera ao Vivo
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('manual')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'manual'
+                    ? 'bg-amber-500 text-neutral-950 shadow-xs'
+                    : 'text-neutral-300 hover:text-white'
+                }`}
+              >
+                <Keyboard className="w-3.5 h-3.5" />
+                Digitar Código
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('quick')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'quick'
+                    ? 'bg-amber-500 text-neutral-950 shadow-xs'
+                    : 'text-neutral-300 hover:text-white'
+                }`}
+              >
+                <ListCheck className="w-3.5 h-3.5" />
+                Contratos ({actionableContracts.length})
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Content Area */}
@@ -306,10 +322,10 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
                 </h3>
                 <p className="text-xs text-neutral-600 max-w-sm mx-auto">
                   {scannedResult.type === 'CHECKIN'
-                    ? 'O horário começou a contar oficialmente. O profissional está registrado no posto de trabalho.'
-                    : `O expediente foi encerrado. O valor de R$ ${scannedResult.contract.dailyRate.toFixed(
+                    ? 'O turno começou oficialmente e o aparelho do freelancer já foi atualizado em tempo real.'
+                    : `O expediente foi encerrado pelo gerente. O valor de R$ ${scannedResult.contract.dailyRate.toFixed(
                         2
-                      )} está pronto para liberação no Escrow.`}
+                      )} está disponível para liberação via Pix.`}
                 </p>
               </div>
 
@@ -332,7 +348,7 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
                 <div className="flex items-center justify-between pt-1 border-t border-neutral-200">
                   <span className="text-neutral-500 flex items-center gap-1.5">
                     <DollarSign className="w-4 h-4 text-emerald-600" />
-                    Valor Escrow:
+                    Valor Garantido em Escrow:
                   </span>
                   <span className="font-mono font-black text-emerald-700 text-sm">
                     R$ {scannedResult.contract.dailyRate.toFixed(2)}
@@ -352,129 +368,139 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Live Camera Viewfinder */}
-              <div className="relative rounded-2xl overflow-hidden bg-neutral-950 aspect-video flex items-center justify-center border border-neutral-800 shadow-inner">
-                <video
-                  ref={videoRef}
-                  className={`w-full h-full object-cover ${hasCamera ? 'block' : 'hidden'}`}
-                  playsInline
-                  muted
-                />
-                <canvas ref={canvasRef} className="hidden" />
-
-                {/* Reticle / Viewfinder Overlay */}
-                {hasCamera && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-6">
-                    <div className="relative w-48 h-48 border-2 border-amber-400 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
-                      <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-amber-400 via-emerald-400 to-amber-400 shadow-md animate-pulse top-1/2 -translate-y-1/2" />
-                      <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-white" />
-                      <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-white" />
-                      <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-white" />
-                      <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-white" />
-                    </div>
-                  </div>
-                )}
-
-                {!hasCamera && (
-                  <div className="p-6 text-center text-neutral-400 space-y-2">
-                    <Camera className="w-10 h-10 mx-auto text-neutral-500" />
-                    <p className="text-xs max-w-xs leading-relaxed">
-                      {cameraError || 'Iniciando câmera...'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Tentar Reconectar Câmera</span>
-                    </button>
-                  </div>
-                )}
-
-                {isProcessing && (
-                  <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
-                    <span className="text-xs font-bold">Validando QR Code...</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Error Notification */}
+              {/* Error Message */}
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-center gap-2 animate-in fade-in">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{errorMsg}</span>
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <strong>Falha na Leitura:</strong> {errorMsg}
+                  </div>
                 </div>
               )}
 
-              {/* Alternative 1: Direct 1-Click Scan from Active Freelancers */}
-              {actionableContracts.length > 0 && (
-                <div className="space-y-2 pt-1">
-                  <span className="text-[11px] font-bold text-neutral-700 uppercase tracking-wider block">
-                    Diárias Prontas para Leitura Direta (1 Clique):
-                  </span>
+              {/* TAB 1: LIVE CAMERA */}
+              {activeTab === 'camera' && (
+                <div className="space-y-4">
+                  <div className="relative w-full aspect-square max-w-[320px] mx-auto rounded-3xl overflow-hidden bg-neutral-950 border-2 border-neutral-800 shadow-inner flex items-center justify-center">
+                    <video
+                      ref={videoRef}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      playsInline
+                      muted
+                    />
+                    <canvas ref={canvasRef} className="hidden" />
 
-                  <div className="space-y-2">
+                    {/* Reticle Scanner Overlay */}
+                    <div className="relative z-10 w-48 h-48 border-2 border-amber-400/80 rounded-2xl flex items-center justify-center pointer-events-none">
+                      <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-amber-400 -mt-1 -ml-1 rounded-tl-sm" />
+                      <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-amber-400 -mt-1 -mr-1 rounded-tr-sm" />
+                      <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-amber-400 -mb-1 -ml-1 rounded-bl-sm" />
+                      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-amber-400 -mb-1 -mr-1 rounded-br-sm" />
+
+                      <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-bounce opacity-80" />
+                    </div>
+
+                    {isProcessing && (
+                      <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white z-20">
+                        <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+                        <span className="text-xs font-bold">Validando token no servidor...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-center gap-3">
+                    <label className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 px-3 py-2 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 flex items-center gap-1.5 cursor-pointer">
+                      <Upload className="w-3.5 h-3.5" />
+                      Carregar Foto do QR Code
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: MANUAL CODE ENTRY */}
+              {activeTab === 'manual' && (
+                <form onSubmit={handleManualSubmit} className="space-y-4 py-2">
+                  <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                    <strong>Validação Manual Resiliente:</strong> Digite ou cole o código que aparece abaixo do QR code na tela do freelancer (ex: <span className="font-mono font-bold">CTR-2026-xxx</span> ou <span className="font-mono font-bold">CM-8492</span>).
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1">
+                      Código ou Token do Contrato:
+                    </label>
+                    <input
+                      type="text"
+                      value={manualCodeInput}
+                      onChange={(e) => setManualCodeInput(e.target.value)}
+                      placeholder="Ex: CM-8492 ou CTR-2026-101"
+                      className="w-full px-4 py-3 text-sm font-mono rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500 uppercase"
+                      autoFocus
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isProcessing || !manualCodeInput.trim()}
+                    className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                    Confirmar Homologação
+                  </button>
+                </form>
+              )}
+
+              {/* TAB 3: QUICK CONTRACT SELECT */}
+              {activeTab === 'quick' && (
+                <div className="space-y-3 py-1">
+                  <p className="text-xs text-neutral-600">
+                    Clique no contrato do profissional presente para homologar a entrada ou saída diretamente:
+                  </p>
+
+                  <div className="space-y-2 max-h-56 overflow-y-auto">
                     {actionableContracts.map((c) => {
                       const isCheckIn = c.status === 'PAGO_E_RETIDO';
                       return (
                         <div
                           key={c.id}
-                          className="p-3.5 rounded-2xl border border-neutral-200 bg-neutral-50/80 hover:bg-neutral-100/90 transition-colors flex items-center justify-between gap-3 text-xs"
+                          className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-amber-50/50 transition-colors text-xs"
                         >
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <strong className="text-neutral-900 text-sm">{c.freelancerName}</strong>
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                  isCheckIn
-                                    ? 'bg-amber-50 text-amber-900 border-amber-300'
-                                    : 'bg-sky-50 text-sky-900 border-sky-300'
-                                }`}
-                              >
-                                {isCheckIn ? 'Aguardando Início' : 'Em Andamento'}
-                              </span>
+                          <div>
+                            <div className="font-bold text-neutral-900">{c.freelancerName}</div>
+                            <div className="text-[11px] text-neutral-500 font-mono">
+                              {c.id} · {c.shiftHours}
                             </div>
-                            <p className="text-[11px] text-neutral-500 font-mono">
-                              Turno: {c.shiftHours} · R$ {c.dailyRate.toFixed(2)}
-                            </p>
                           </div>
 
                           <button
                             type="button"
-                            onClick={() => handleDirectScanContract(c)}
+                            onClick={() => handleScannedData(c.id)}
                             disabled={isProcessing}
-                            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                               isCheckIn
                                 ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950'
-                                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                : 'bg-neutral-900 hover:bg-neutral-800 text-white'
                             }`}
                           >
-                            <ScanLine className="w-3.5 h-3.5" />
-                            <span>{isCheckIn ? 'Escanear Início' : 'Escanear Saída'}</span>
+                            {isCheckIn ? 'Validar Entrada' : 'Encerrar Saída'}
                           </button>
                         </div>
                       );
                     })}
+
+                    {actionableContracts.length === 0 && (
+                      <div className="p-4 text-center text-xs text-neutral-500 bg-neutral-50 rounded-xl">
+                        Nenhum contrato aguardando entrada ou saída no momento.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-
-              {/* Alternative 2: Upload QR Photo */}
-              <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
-                <span className="text-[11px]">Também aceita foto da tela:</span>
-                <label className="px-3 py-1.5 rounded-lg border border-neutral-300 hover:bg-neutral-50 text-neutral-700 font-medium text-xs flex items-center gap-1.5 cursor-pointer">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Carregar Foto do QR</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
             </>
           )}
         </div>

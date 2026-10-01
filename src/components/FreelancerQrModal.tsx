@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Contract } from '../types';
 import { api } from '../services/api';
-import { generateDiariaQrToken, renderQrCodeDataUrl } from '../utils/qrcode';
+import { generateDiariaQrToken, renderQrCodeDataUrl, generatePairingCode } from '../utils/qrcode';
+import { RealtimeHub } from '../utils/deviceRepository';
 import {
   QrCode,
   ShieldCheck,
@@ -15,6 +16,9 @@ import {
   ScanLine,
   RefreshCw,
   Loader2,
+  Copy,
+  Check,
+  Radio,
 } from 'lucide-react';
 
 interface FreelancerQrModalProps {
@@ -34,8 +38,26 @@ export const FreelancerQrModal: React.FC<FreelancerQrModalProps> = ({
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrToken, setQrToken] = useState<string>('');
+  const [pairingCode, setPairingCode] = useState<string>('');
+  const [copiedCode, setCopiedCode] = useState(false);
   const [isSimulatingScan, setIsSimulatingScan] = useState(false);
   const [isScannedSuccessfully, setIsScannedSuccessfully] = useState(false);
+
+  // Play audio chime on successful scan
+  const playBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.25);
+    } catch {}
+  };
 
   // Generate QR Token and Data URL on open
   useEffect(() => {
@@ -44,6 +66,9 @@ export const FreelancerQrModal: React.FC<FreelancerQrModalProps> = ({
       setIsScannedSuccessfully(false);
       return;
     }
+
+    const code = generatePairingCode(contract.id);
+    setPairingCode(code);
 
     const token = generateDiariaQrToken(contract.id, type, contract.freelancerId);
     setQrToken(token);
@@ -57,70 +82,79 @@ export const FreelancerQrModal: React.FC<FreelancerQrModalProps> = ({
       .catch((err) => console.error('Error rendering QR code', err));
   }, [isOpen, contract.id, contract.freelancerId, type]);
 
-  // Poll contract updates to detect if manager scanned from another screen/device
+  // Real-Time SSE listener: catches manager's scan instantly across separate devices!
   useEffect(() => {
     if (!isOpen || isScannedSuccessfully) return;
 
+    const unsubscribe = RealtimeHub.subscribe((eventName, payload) => {
+      if (eventName === 'qr_scanned' || eventName === 'contract_updated') {
+        const payloadContractId = payload.contractId || payload.id || payload.contract?.id;
+        if (payloadContractId === contract.id) {
+          playBeep();
+          setIsScannedSuccessfully(true);
+          const freshContract = payload.contract || payload;
+          setTimeout(() => {
+            onSuccess(freshContract);
+            onClose();
+          }, 1500);
+        }
+      }
+    });
+
+    // Fallback silent poll every 2.5s in case SSE is blocked by proxy
     const interval = setInterval(async () => {
       try {
         const fresh = await api.getContractById(contract.id);
         if (fresh) {
           if (type === 'CHECKIN' && fresh.status === 'CHECKIN_REALIZADO') {
+            playBeep();
             setIsScannedSuccessfully(true);
             setTimeout(() => {
               onSuccess(fresh);
               onClose();
-            }, 1600);
+            }, 1500);
           } else if (type === 'CHECKOUT' && (fresh.status === 'CONCLUIDO' || fresh.status === 'VALOR_LIBERADO')) {
+            playBeep();
             setIsScannedSuccessfully(true);
             setTimeout(() => {
               onSuccess(fresh);
               onClose();
-            }, 1600);
+            }, 1500);
           }
         }
-      } catch (e) {
-        // silent poll
-      }
-    }, 2000);
+      } catch {}
+    }, 2500);
 
-    return () => clearInterval(interval);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, [isOpen, contract.id, type, isScannedSuccessfully, onSuccess, onClose]);
 
   if (!isOpen) return null;
 
   const isCheckIn = type === 'CHECKIN';
 
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(pairingCode || contract.id);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
   // Demo simulator button: allows testing the manager's scan in 1 click
   const handleSimulateManagerScan = async () => {
     setIsSimulatingScan(true);
     try {
-      if (isCheckIn) {
-        const updated = await api.updateContract({
-          contractId: contract.id,
-          status: 'CHECKIN_REALIZADO',
-          callerRole: 'EMPRESA',
-          startQrToken: qrToken,
-        });
-        setIsScannedSuccessfully(true);
-        setTimeout(() => {
-          onSuccess(updated);
-          onClose();
-        }, 1500);
-      } else {
-        const updated = await api.updateContract({
-          contractId: contract.id,
-          status: 'CONCLUIDO',
-          callerRole: 'EMPRESA',
-          endQrToken: qrToken,
-          managerApprovedOut: true,
-        });
-        setIsScannedSuccessfully(true);
-        setTimeout(() => {
-          onSuccess(updated);
-          onClose();
-        }, 1500);
-      }
+      const response = await api.scanQrCode({
+        qrToken: qrToken,
+        callerRole: 'EMPRESA',
+      });
+      playBeep();
+      setIsScannedSuccessfully(true);
+      setTimeout(() => {
+        onSuccess(response.contract);
+        onClose();
+      }, 1500);
     } catch (err: any) {
       alert(err?.message || 'Erro ao simular leitura do QR code.');
     } finally {
@@ -220,6 +254,26 @@ export const FreelancerQrModal: React.FC<FreelancerQrModalProps> = ({
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                   <span>Aguardando leitura pelo gerente do estabelecimento...</span>
                 </div>
+              </div>
+
+              {/* Manual Pairing Code for Cross-Device Resiliency */}
+              <div className="p-3 rounded-2xl bg-white border border-neutral-200 shadow-xs flex items-center justify-between gap-2">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500 block">
+                    Código para Digitação Manual no outro aparelho:
+                  </span>
+                  <span className="font-mono font-black text-sm text-neutral-900 tracking-wider">
+                    {pairingCode || contract.id}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-xs font-semibold text-neutral-700 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-neutral-500" />}
+                  <span>{copiedCode ? 'Copiado' : 'Copiar'}</span>
+                </button>
               </div>
 
               {/* Info details */}

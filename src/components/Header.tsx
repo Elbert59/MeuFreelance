@@ -10,6 +10,8 @@ import {
   LogOut,
   Lock,
   Search,
+  Smartphone,
+  Radio,
 } from 'lucide-react';
 
 export type AppTab = 'empresa' | 'mural' | 'freelancer' | 'contratos';
@@ -21,6 +23,8 @@ interface HeaderProps {
   onOpenRegisterCompany: () => void;
   onOpenRegisterFreelancer: () => void;
   onOpenSecurityModal: () => void;
+  onOpenDeviceCacheModal?: () => void;
+  onlineDeviceCount?: number;
   pendingEscrowTotal: number;
 }
 
@@ -31,6 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenRegisterCompany,
   onOpenRegisterFreelancer,
   onOpenSecurityModal,
+  onOpenDeviceCacheModal,
+  onlineDeviceCount = 1,
   pendingEscrowTotal,
 }) => {
   const { session, isLoggedIn, logout } = useAuth();
@@ -221,6 +227,25 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                 )}
               </div>
+
+              {/* Multi-Device Live Sync & Cache Repository Indicator */}
+              {onOpenDeviceCacheModal && (
+                <button
+                  type="button"
+                  onClick={onOpenDeviceCacheModal}
+                  title="Gerenciar Dados, Cookies e Dispositivos Conectados em Tempo Real"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-950 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <Smartphone className="w-3.5 h-3.5 text-sky-700" />
+                  <span className="hidden sm:inline">
+                    {onlineDeviceCount} {onlineDeviceCount === 1 ? 'Aparelho' : 'Aparelhos'}
+                  </span>
+                </button>
+              )}
 
               {/* PWA Install Button */}
               <PWAInstallButton variant="header" />

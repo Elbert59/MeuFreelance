@@ -41,6 +41,9 @@ export interface Freelancer {
   bio: string;
   availableDays: string[];
   immediateAvailable: boolean;
+  phone?: string;
+  email?: string;
+  pixKey?: string;
 }
 
 export type ContractStatus = 
@@ -54,7 +57,13 @@ export interface ContractReview {
   rating: number;
   tags: string[];
   comment?: string;
-  createdAt: string;
+  createdAt?: string;
+  punctualityRating?: number;
+  proactivityRating?: number;
+  postureRating?: number;
+  hygieneRating?: number;
+  equipmentRating?: number;
+  rehireRecommended?: boolean;
 }
 
 export interface Contract {

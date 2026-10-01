@@ -14,10 +14,12 @@ import { LoginModal } from './components/LoginModal';
 import { RegisterCompanyModal } from './components/RegisterCompanyModal';
 import { RegisterFreelancerModal } from './components/RegisterFreelancerModal';
 import { SecurityGuaranteeModal } from './components/SecurityGuaranteeModal';
+import { DeviceCacheModal } from './components/DeviceCacheModal';
 import { B2BAuthGateway } from './components/B2BAuthGateway';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { useAutoUpdate } from './hooks/useAutoUpdate';
+import { RealtimeHub, DeviceManager, DeviceCacheRepository } from './utils/deviceRepository';
 import {
   Search,
   MapPin,
@@ -47,8 +49,42 @@ function AppContent() {
   const [isRegisterCompanyOpen, setIsRegisterCompanyOpen] = useState(false);
   const [isRegisterFreelancerOpen, setIsRegisterFreelancerOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isDeviceCacheModalOpen, setIsDeviceCacheModalOpen] = useState(false);
+  const [onlineDeviceCount, setOnlineDeviceCount] = useState(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Multi-Device Real-Time Synchronization via Server-Sent Events (SSE)
+  useEffect(() => {
+    DeviceManager.handshake({ role });
+
+    const unsubscribe = RealtimeHub.subscribe((eventName, payload) => {
+      if (eventName === 'contract_updated') {
+        const updated = payload.contract || payload;
+        if (updated && updated.id) {
+          handleContractUpdated(updated);
+        }
+      } else if (eventName === 'qr_scanned') {
+        const updated = payload.contract;
+        if (updated && updated.id) {
+          handleContractUpdated(updated);
+          showToast(`QR Code validado! ${payload.type === 'CHECKIN' ? 'Início' : 'Encerramento'} homologado.`);
+        }
+      } else if (eventName === 'devices_changed') {
+        if (Array.isArray(payload)) {
+          setOnlineDeviceCount(payload.length || 1);
+        } else if (payload?.onlineCount) {
+          setOnlineDeviceCount(payload.onlineCount);
+        }
+      } else if (eventName === 'opportunity_created') {
+        setOpportunities((prev) => [payload, ...prev.filter((o) => o.id !== payload.id)]);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [role]);
 
   // Authentication route guard / middleware:
   // Immediately opens 'Sessão & Cadastro B2B' on load or logout if user is not authenticated.
@@ -234,6 +270,8 @@ function AppContent() {
         onOpenRegisterCompany={() => setIsRegisterCompanyOpen(true)}
         onOpenRegisterFreelancer={() => setIsRegisterFreelancerOpen(true)}
         onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+        onOpenDeviceCacheModal={() => setIsDeviceCacheModalOpen(true)}
+        onlineDeviceCount={onlineDeviceCount}
         pendingEscrowTotal={pendingEscrowTotal}
       />
 
@@ -531,6 +569,13 @@ function AppContent() {
       <SecurityGuaranteeModal
         isOpen={isSecurityModalOpen}
         onClose={() => setIsSecurityModalOpen(false)}
+      />
+
+      {/* Multi-Device Cache & Cookie Repository Modal */}
+      <DeviceCacheModal
+        isOpen={isDeviceCacheModalOpen}
+        onClose={() => setIsDeviceCacheModalOpen(false)}
+        onlineCount={onlineDeviceCount}
       />
 
       {/* Connectivity & Offline Status */}

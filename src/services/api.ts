@@ -295,9 +295,20 @@ export const api = {
   },
 
   /**
-   * Get single contract by ID
+   * Get single contract by ID directly from server with cache fallback
    */
   async getContractById(id: string): Promise<Contract | null> {
+    try {
+      const res = await fetch(`/api/contracts/${encodeURIComponent(id)}`);
+      if (res.ok) {
+        const contract = await res.json();
+        cachedContracts = cachedContracts.map((c) => (c.id === contract.id ? contract : c));
+        saveCache(STORAGE_KEYS.CONTRACTS, cachedContracts);
+        return contract;
+      }
+    } catch (e) {
+      console.warn('[API] getContractById network error, using local cache', e);
+    }
     const list = await this.getContracts();
     return list.find((c) => c.id === id) || null;
   },
@@ -625,6 +636,91 @@ export const api = {
       totalCompanies: cachedCompanies.length,
       totalContracts: cachedContracts.length,
     };
+  },
+
+  /**
+   * POST /api/contracts/scan-qr (Authoritative multi-device QR scanner)
+   */
+  async scanQrCode(payload: {
+    qrToken: string;
+    callerRole?: 'EMPRESA' | 'FREELANCER';
+    managerDeviceId?: string;
+    simulatedElapsedMinutes?: number;
+  }): Promise<{ contract: Contract; type: 'CHECKIN' | 'CHECKOUT'; message: string }> {
+    const res = await fetch('/api/contracts/scan-qr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      cachedContracts = cachedContracts.map((c) => (c.id === result.contract.id ? result.contract : c));
+      saveCache(STORAGE_KEYS.CONTRACTS, cachedContracts);
+      return result;
+    } else {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || 'Erro ao processar validação do QR code.');
+    }
+  },
+
+  /**
+   * GET /api/devices (List active connected devices)
+   */
+  async getDevices(): Promise<{ devices: any[]; onlineCount: number; timestamp: string }> {
+    try {
+      const res = await fetch('/api/devices');
+      if (res.ok) return await res.json();
+    } catch {}
+    return { devices: [], onlineCount: 1, timestamp: new Date().toISOString() };
+  },
+
+  /**
+   * POST /api/devices/handshake
+   */
+  async deviceHandshake(payload: any): Promise<any> {
+    try {
+      const res = await fetch('/api/devices/handshake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return payload;
+  },
+
+  /**
+   * GET /api/devices/:deviceId/cache
+   */
+  async getDeviceCache(deviceId: string): Promise<any> {
+    try {
+      const res = await fetch(`/api/devices/${encodeURIComponent(deviceId)}/cache`);
+      if (res.ok) return await res.json();
+    } catch {}
+    return null;
+  },
+
+  /**
+   * POST /api/devices/:deviceId/cache
+   */
+  async saveDeviceCache(deviceId: string, cache: any): Promise<void> {
+    try {
+      await fetch(`/api/devices/${encodeURIComponent(deviceId)}/cache`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cache),
+      });
+    } catch {}
+  },
+
+  /**
+   * POST /api/devices/:deviceId/clear-cache
+   */
+  async clearDeviceCache(deviceId: string): Promise<void> {
+    try {
+      await fetch(`/api/devices/${encodeURIComponent(deviceId)}/clear-cache`, { method: 'POST' });
+    } catch {}
   },
 
   /**
