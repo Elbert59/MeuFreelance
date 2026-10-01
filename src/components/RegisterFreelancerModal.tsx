@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CategoryId } from '../types';
-import { User, X, Check, ShieldCheck, Sparkles, Wrench, Award, AlertCircle, Loader2 } from 'lucide-react';
+import { User, X, Check, ShieldCheck, Sparkles, Wrench, AlertCircle, Loader2 } from 'lucide-react';
 
 interface RegisterFreelancerModalProps {
   isOpen: boolean;
@@ -124,19 +124,19 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-2xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-neutral-900">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-neutral-50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-              <User className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center border border-emerald-300">
+              <User className="w-4 h-4 text-emerald-600" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-neutral-900">
                 Cadastro de Profissional Freelancer (Gastronomia)
               </h2>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-neutral-500">
                 Receba convites de diárias em Maringá com garantia de pagamento via Escrow
               </p>
             </div>
@@ -144,7 +144,7 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -153,8 +153,8 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
           {error && (
-            <div className="p-3 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
           )}
@@ -162,7 +162,7 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
           {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Nome Completo *
               </label>
               <input
@@ -170,13 +170,13 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Gabriel Tanaka"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 CPF ou MEI *
               </label>
               <input
@@ -184,7 +184,7 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="000.000.000-00 ou MEI"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500 font-mono"
                 required
               />
             </div>
@@ -193,13 +193,13 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
           {/* Specialty & Category */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Especialidade Principal *
               </label>
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value as CategoryId)}
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500"
               >
                 <option value="cozinha-oriental">Cozinha Oriental (Sushiman)</option>
                 <option value="salao-atendimento">Salão e Atendimento (Garçom)</option>
@@ -210,7 +210,7 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Cargo / Título Profissional *
               </label>
               <input
@@ -218,13 +218,13 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 placeholder="Ex: Sushiman Pleno, Chefe de Salão"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Valor da Diária (R$) *
               </label>
               <input
@@ -233,7 +233,7 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                 onChange={(e) => setDailyRate(Number(e.target.value))}
                 min={150}
                 max={900}
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-mono font-bold"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500 font-mono font-bold"
                 required
               />
             </div>
@@ -241,7 +241,7 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Especialidade de Destaque
               </label>
               <input
@@ -249,13 +249,13 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
                 placeholder="Ex: Sashimi & Desmanche de Salmão, Vinhos"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
                   Anos de Exp.
                 </label>
                 <input
@@ -264,12 +264,12 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                   onChange={(e) => setExperienceYears(Number(e.target.value))}
                   min={1}
                   max={30}
-                  className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
                   Bairro em Maringá
                 </label>
                 <input
@@ -277,21 +277,21 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Maringá · Zona 07"
-                  className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
           </div>
 
           {/* Pix Key for Instant Escrow Payout */}
-          <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
-              <ShieldCheck className="w-4 h-4" />
+          <div className="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50/70 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <span>Dados para Liquidação Instantânea via Pix</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-neutral-300 mb-1">
+                <label className="block text-[11px] font-semibold text-neutral-700 mb-1">
                   Chave Pix (CPF, Celular, E-mail ou Aleatória) *
                 </label>
                 <input
@@ -299,12 +299,12 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                   value={pixKey}
                   onChange={(e) => setPixKey(e.target.value)}
                   placeholder="pix@seuemail.com ou (44) 99999-9999"
-                  className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500 font-mono"
                   required
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-neutral-300 mb-1">
+                <label className="block text-[11px] font-semibold text-neutral-700 mb-1">
                   WhatsApp para Alinhamento de Turno
                 </label>
                 <input
@@ -312,19 +312,19 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="(44) 99123-4567"
-                  className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
-            <p className="text-[10px] text-neutral-400">
+            <p className="text-[10px] text-neutral-600">
               O pagamento retido no cofre da empresa é transferido automaticamente para essa chave assim que você fizer o check-out.
             </p>
           </div>
 
           {/* Skills Selection */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <label className="block text-xs font-semibold text-neutral-700 mb-1.5 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               Habilidades Técnicas (clique para selecionar):
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -337,8 +337,8 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                     onClick={() => toggleSkill(skill)}
                     className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
                       isSelected
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500 font-semibold'
-                        : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:text-white'
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-400 font-semibold shadow-xs'
+                        : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-white'
                     }`}
                   >
                     {skill}
@@ -350,8 +350,8 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
 
           {/* Own Gear Selection */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1.5 flex items-center gap-1.5">
-              <Wrench className="w-3.5 h-3.5 text-amber-400" />
+            <label className="block text-xs font-semibold text-neutral-700 mb-1.5 flex items-center gap-1.5">
+              <Wrench className="w-3.5 h-3.5 text-amber-500" />
               Equipamento Próprio que Leva aos Turnos:
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -364,8 +364,8 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
                     onClick={() => toggleGear(gear)}
                     className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
                       isSelected
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500 font-semibold'
-                        : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:text-white'
+                        ? 'bg-amber-100 text-amber-900 border-amber-400 font-semibold shadow-xs'
+                        : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-white'
                     }`}
                   >
                     {gear}
@@ -377,14 +377,14 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
 
           {/* Bio */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">
               Mini Apresentação Profissional
             </label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={2}
-              className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+              className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
@@ -393,7 +393,7 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 disabled:opacity-50 text-neutral-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm transition-all shadow-xs flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

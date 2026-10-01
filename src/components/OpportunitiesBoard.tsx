@@ -11,9 +11,7 @@ import {
   Plus,
   X,
   CheckCircle,
-  AlertCircle,
   Loader2,
-  Sparkles,
 } from 'lucide-react';
 
 interface OpportunitiesBoardProps {
@@ -34,7 +32,7 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
   // New Opp Form State
   const [roleTitle, setRoleTitle] = useState('Sushiman para Cobertura de Folga');
   const [description, setDescription] = useState('Precisamos de profissional experiente em sushi bar para turno noturno movimentado.');
-  const [date, setDate] = useState('Hoje (28/09 - Turno Noturno)');
+  const [date, setDate] = useState('Hoje (Turno Noturno)');
   const [shiftHours, setShiftHours] = useState('18:00 - 00:00');
   const [venueAddress, setVenueAddress] = useState(session.location || 'Av. Prudente de Morais, 820 · Maringá - PR');
   const [dailyRate, setDailyRate] = useState(350);
@@ -78,7 +76,6 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
   const handleAcceptShift = async (opp: ShiftOpportunity) => {
     setLoadingOppId(opp.id);
     try {
-      // Find current freelancer or default
       const currentFreelancer =
         availableFreelancers.find((f) => f.id === session.id) || availableFreelancers[0];
 
@@ -94,16 +91,16 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
   return (
     <section className="space-y-6 animate-in fade-in duration-200">
       {/* Header Banner */}
-      <div className="p-6 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-950/40 via-neutral-900 to-neutral-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/40 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-950/80 px-2.5 py-1 rounded-full mb-2 border border-amber-800/60">
-            <Flame className="w-3.5 h-3.5 fill-amber-400" />
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full mb-2 border border-amber-300">
+            <Flame className="w-3.5 h-3.5 fill-amber-600 text-amber-600" />
             <span>Mural de Diárias & Chamadas de Emergência</span>
           </div>
-          <h2 className="text-xl font-extrabold text-white">
+          <h2 className="text-xl font-extrabold text-neutral-900">
             Vagas Urgentes para Turnos de Hoje em Maringá
           </h2>
-          <p className="text-xs text-neutral-300 mt-1 max-w-2xl leading-relaxed">
+          <p className="text-xs text-neutral-600 mt-1 max-w-2xl leading-relaxed">
             Restaurantes publicam necessidades imediatas e o valor da diária já entra automaticamente protegido pelo cofre da plataforma. Freelancers podem aceitar com 1 clique.
           </p>
         </div>
@@ -111,7 +108,7 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
         {role === 'EMPRESA' && (
           <button
             onClick={() => setIsPostingModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-lg shadow-amber-500/20 whitespace-nowrap shrink-0"
+            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Publicar Diária Urgente</span>
@@ -124,20 +121,20 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
         {opportunities.map((opp) => (
           <div
             key={opp.id}
-            className={`p-5 rounded-2xl border flex flex-col justify-between transition-all ${
+            className={`p-5 rounded-2xl border flex flex-col justify-between transition-all shadow-xs ${
               opp.status === 'PREENCHIDA'
-                ? 'border-neutral-800 bg-neutral-950 opacity-60'
-                : 'border-neutral-800 bg-neutral-900/90 hover:border-neutral-700 hover:shadow-xl'
+                ? 'border-neutral-200 bg-neutral-50 opacity-60'
+                : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-md'
             }`}
           >
             <div>
               {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-neutral-400">{opp.id}</span>
+                  <span className="text-xs font-mono text-neutral-500">{opp.id}</span>
                   {opp.urgent && (
-                    <span className="text-[10px] font-bold text-rose-400 bg-rose-950/80 border border-rose-800 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Flame className="w-3 h-3 fill-rose-400" /> Urgente Hoje
+                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Flame className="w-3 h-3 fill-rose-500 text-rose-500" /> Urgente Hoje
                     </span>
                   )}
                 </div>
@@ -145,8 +142,8 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
                 <span
                   className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded border ${
                     opp.status === 'ABERTA'
-                      ? 'text-emerald-400 bg-emerald-950/80 border-emerald-800'
-                      : 'text-neutral-500 bg-neutral-900 border-neutral-800'
+                      ? 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                      : 'text-neutral-500 bg-neutral-100 border-neutral-200'
                   }`}
                 >
                   {opp.status}
@@ -154,27 +151,27 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
               </div>
 
               {/* Title & Restaurant */}
-              <h3 className="text-base font-bold text-white leading-snug">
+              <h3 className="text-base font-bold text-neutral-900 leading-snug">
                 {opp.roleTitle}
               </h3>
 
-              <div className="flex items-center gap-2 mt-1.5 text-xs text-amber-300 font-semibold">
-                <Building2 className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-2 mt-1.5 text-xs text-amber-800 font-semibold">
+                <Building2 className="w-3.5 h-3.5 text-amber-600" />
                 <span>{opp.companyName}</span>
               </div>
 
-              <p className="text-xs text-neutral-400 mt-2 line-clamp-2 leading-relaxed">
+              <p className="text-xs text-neutral-600 mt-2 line-clamp-2 leading-relaxed">
                 {opp.description}
               </p>
 
               {/* Shift info */}
-              <div className="my-3.5 p-3 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1.5 text-xs text-neutral-300">
+              <div className="my-3.5 p-3 rounded-xl bg-neutral-50 border border-neutral-200 space-y-1.5 text-xs text-neutral-700">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                  <Clock className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
                   <span>{opp.date} · {opp.shiftHours}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
                   <span className="truncate">{opp.venueAddress}</span>
                 </div>
               </div>
@@ -184,7 +181,7 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
                 {opp.requiredSkills.map((sk, idx) => (
                   <span
                     key={idx}
-                    className="text-[10px] bg-neutral-800/80 text-neutral-300 px-2 py-0.5 rounded border border-neutral-700/60"
+                    className="text-[10px] bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200"
                   >
                     {sk}
                   </span>
@@ -193,16 +190,16 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="pt-3 border-t border-neutral-800 flex items-center justify-between gap-3">
+            <div className="pt-3 border-t border-neutral-100 flex items-center justify-between gap-3">
               <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-400 block">
+                <span className="text-[10px] uppercase font-bold text-neutral-500 block">
                   Valor da Diária
                 </span>
-                <span className="text-base font-bold text-white font-mono">
+                <span className="text-base font-bold text-neutral-900 font-mono">
                   R$ {opp.dailyRate.toFixed(2)}
                 </span>
-                <div className="flex items-center gap-1 text-[10px] text-emerald-400">
-                  <ShieldCheck className="w-3 h-3" />
+                <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
                   <span>Escrow Garantido</span>
                 </div>
               </div>
@@ -212,7 +209,7 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
                   <button
                     onClick={() => handleAcceptShift(opp)}
                     disabled={loadingOppId === opp.id}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-emerald-500/20"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-xs"
                   >
                     {loadingOppId === opp.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -227,7 +224,7 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
                   </span>
                 )
               ) : (
-                <span className="text-xs text-neutral-500 font-semibold">
+                <span className="text-xs text-neutral-400 font-semibold">
                   Preenchida
                 </span>
               )}
@@ -238,21 +235,21 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
 
       {/* Post Urgent Shift Modal (For Company) */}
       {isPostingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-2xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-neutral-900">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-neutral-50">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                  <Flame className="w-4 h-4 fill-amber-400" />
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+                  <Flame className="w-4 h-4 fill-amber-600 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Publicar Diária Urgente</h3>
-                  <p className="text-xs text-neutral-400">Notifique profissionais disponíveis em Maringá</p>
+                  <h3 className="text-base font-bold text-neutral-900">Publicar Diária Urgente</h3>
+                  <p className="text-xs text-neutral-500">Notifique profissionais disponíveis em Maringá</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsPostingModalOpen(false)}
-                className="p-1 rounded-lg text-neutral-400 hover:text-white"
+                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -260,59 +257,59 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
 
             <form onSubmit={handlePostOpportunity} className="p-6 overflow-y-auto space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
                   Título da Diária / Cargo *
                 </label>
                 <input
                   type="text"
                   value={roleTitle}
                   onChange={(e) => setRoleTitle(e.target.value)}
-                  className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
                   Descrição da Demanda
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={2}
-                  className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
                     Data do Turno
                   </label>
                   <input
                     type="text"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                    className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
                     Horário do Turno
                   </label>
                   <input
                     type="text"
                     value={shiftHours}
                     onChange={(e) => setShiftHours(e.target.value)}
-                    className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                    className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
                     Valor da Diária (R$) *
                   </label>
                   <input
@@ -320,14 +317,14 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
                     value={dailyRate}
                     onChange={(e) => setDailyRate(Number(e.target.value))}
                     min={180}
-                    className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500 font-mono font-bold"
+                    className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500 font-mono font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
                     Urgência
                   </label>
-                  <label className="flex items-center gap-2 text-xs text-neutral-300 pt-2 cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-neutral-700 pt-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={isUrgent}
@@ -340,14 +337,14 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
                   Habilidades / Requisitos (separados por vírgula)
                 </label>
                 <input
                   type="text"
                   value={requiredSkillInput}
                   onChange={(e) => setRequiredSkillInput(e.target.value)}
-                  className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -355,7 +352,7 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
                 <button
                   type="submit"
                   disabled={loadingPost}
-                  className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-xs"
                 >
                   {loadingPost ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   <span>Publicar no Mural com Depósito em Escrow</span>

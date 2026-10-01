@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Building2, User, X, Check, PlusCircle, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Building2, User, X, Check, PlusCircle, ShieldCheck, ArrowRight } from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -21,21 +21,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-neutral-900">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-neutral-50">
           <div>
-            <h2 className="text-base font-bold text-white">
+            <h2 className="text-base font-bold text-neutral-900">
               Sessão & Cadastro B2B
             </h2>
-            <p className="text-xs text-neutral-400">
+            <p className="text-xs text-neutral-500">
               Alterne entre contas ou cadastre sua empresa / perfil
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -49,16 +49,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 onClose();
                 onOpenRegisterCompany();
               }}
-              className="p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-left transition-all group"
+              className="p-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/70 text-left transition-all group shadow-xs"
             >
               <div className="flex items-center justify-between mb-1.5">
-                <Building2 className="w-5 h-5 text-amber-400" />
-                <PlusCircle className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                <Building2 className="w-5 h-5 text-amber-700" />
+                <PlusCircle className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
               </div>
-              <h4 className="text-xs font-bold text-amber-300">
+              <h4 className="text-xs font-bold text-amber-900">
                 + Cadastrar Nova Empresa
               </h4>
-              <p className="text-[11px] text-neutral-400 mt-0.5">
+              <p className="text-[11px] text-neutral-600 mt-0.5">
                 Restaurante, Sushibar ou Buffet com CNPJ
               </p>
             </button>
@@ -68,34 +68,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 onClose();
                 onOpenRegisterFreelancer();
               }}
-              className="p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-left transition-all group"
+              className="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100/70 text-left transition-all group shadow-xs"
             >
               <div className="flex items-center justify-between mb-1.5">
-                <User className="w-5 h-5 text-emerald-400" />
-                <PlusCircle className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <User className="w-5 h-5 text-emerald-700" />
+                <PlusCircle className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
               </div>
-              <h4 className="text-xs font-bold text-emerald-300">
+              <h4 className="text-xs font-bold text-emerald-900">
                 + Cadastrar Novo Freelancer
               </h4>
-              <p className="text-[11px] text-neutral-400 mt-0.5">
+              <p className="text-[11px] text-neutral-600 mt-0.5">
                 Sushiman, Garçom, Bartender ou Chef
               </p>
             </button>
           </div>
 
           {/* Role selector for existing accounts */}
-          <div className="pt-2 border-t border-neutral-800">
+          <div className="pt-2 border-t border-neutral-200">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
+              <span className="text-xs uppercase font-bold text-neutral-500 tracking-wider">
                 Ou acesse uma conta de teste:
               </span>
-              <div className="flex items-center gap-1 bg-neutral-950 p-1 rounded-lg border border-neutral-800 text-xs">
+              <div className="flex items-center gap-1 bg-neutral-100 p-1 rounded-lg border border-neutral-200 text-xs">
                 <button
                   onClick={() => setSelectedRole('EMPRESA')}
                   className={`px-2.5 py-1 rounded font-medium transition-colors ${
                     selectedRole === 'EMPRESA'
-                      ? 'bg-amber-500 text-neutral-950 font-bold'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-amber-500 text-neutral-950 font-bold shadow-xs'
+                      : 'text-neutral-600 hover:text-neutral-900'
                   }`}
                 >
                   Empresas ({allCompanies.length})
@@ -104,8 +104,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   onClick={() => setSelectedRole('FREELANCER')}
                   className={`px-2.5 py-1 rounded font-medium transition-colors ${
                     selectedRole === 'FREELANCER'
-                      ? 'bg-emerald-500 text-neutral-950 font-bold'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                      : 'text-neutral-600 hover:text-neutral-900'
                   }`}
                 >
                   Freelancers ({availableFreelancers.length})
@@ -127,26 +127,26 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         }}
                         className={`w-full p-3 rounded-xl border flex items-center justify-between text-left transition-colors ${
                           isCurrent
-                            ? 'border-amber-400/60 bg-amber-500/10'
-                            : 'border-neutral-800 bg-neutral-950 hover:bg-neutral-800/60'
+                            ? 'border-amber-400 bg-amber-50 shadow-xs'
+                            : 'border-neutral-200 bg-neutral-50 hover:bg-white'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-xl">{comp.avatar}</span>
                           <div>
-                            <p className="text-xs font-bold text-white">{comp.name}</p>
-                            <p className="text-[10px] text-neutral-400 font-mono">
+                            <p className="text-xs font-bold text-neutral-900">{comp.name}</p>
+                            <p className="text-[10px] text-neutral-500 font-mono">
                               CNPJ: {comp.identifier} · Saldo R$ {comp.walletBalance}
                             </p>
                           </div>
                         </div>
 
                         {isCurrent ? (
-                          <span className="text-xs text-amber-400 font-semibold flex items-center gap-1">
+                          <span className="text-xs text-amber-700 font-semibold flex items-center gap-1">
                             <Check className="w-3.5 h-3.5" /> Ativo
                           </span>
                         ) : (
-                          <span className="text-xs text-neutral-400 group-hover:text-white flex items-center gap-1">
+                          <span className="text-xs text-neutral-500 group-hover:text-neutral-900 flex items-center gap-1">
                             Acessar <ArrowRight className="w-3 h-3" />
                           </span>
                         )}
@@ -164,30 +164,40 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         }}
                         className={`w-full p-3 rounded-xl border flex items-center justify-between text-left transition-colors ${
                           isCurrent
-                            ? 'border-emerald-400/60 bg-emerald-500/10'
-                            : 'border-neutral-800 bg-neutral-950 hover:bg-neutral-800/60'
+                            ? 'border-emerald-400 bg-emerald-50 shadow-xs'
+                            : 'border-neutral-200 bg-neutral-50 hover:bg-white'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${freela.avatarFallbackColor}`}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
+                              freela.avatarFallbackColor.includes('rose')
+                                ? 'bg-rose-100 text-rose-800'
+                                : freela.avatarFallbackColor.includes('amber')
+                                ? 'bg-amber-100 text-amber-800'
+                                : freela.avatarFallbackColor.includes('violet')
+                                ? 'bg-violet-100 text-violet-800'
+                                : freela.avatarFallbackColor.includes('orange')
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}
                           >
                             {freela.name.slice(0, 2)}
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-white">{freela.name}</p>
-                            <p className="text-[10px] text-neutral-400">
+                            <p className="text-xs font-bold text-neutral-900">{freela.name}</p>
+                            <p className="text-[10px] text-neutral-500">
                               {freela.role} · R$ {freela.dailyRate}/diária
                             </p>
                           </div>
                         </div>
 
                         {isCurrent ? (
-                          <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                          <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
                             <Check className="w-3.5 h-3.5" /> Ativo
                           </span>
                         ) : (
-                          <span className="text-xs text-neutral-400 group-hover:text-white flex items-center gap-1">
+                          <span className="text-xs text-neutral-500 group-hover:text-neutral-900 flex items-center gap-1">
                             Acessar <ArrowRight className="w-3 h-3" />
                           </span>
                         )}
@@ -197,14 +207,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </div>
           </div>
 
-          <div className="pt-2 border-t border-neutral-800 flex items-center justify-between text-xs text-neutral-400">
-            <span className="flex items-center gap-1 text-[11px]">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-xs text-neutral-500">
+            <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               Sessão persistida no navegador
             </span>
             <button
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+              className="px-3 py-1.5 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
             >
               Fechar
             </button>

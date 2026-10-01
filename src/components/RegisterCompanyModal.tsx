@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Building2, X, ShieldCheck, Check, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { Building2, X, Check, AlertCircle, Loader2 } from 'lucide-react';
 
 interface RegisterCompanyModalProps {
   isOpen: boolean;
@@ -63,19 +63,19 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
   const icons = ['🏮', '🍷', '🥩', '🍸', '🍕', '🍱', '🍔', '☕', '🧁', '🍽️'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl rounded-2xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-neutral-900">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-neutral-50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-              <Building2 className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center border border-amber-300">
+              <Building2 className="w-4 h-4 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-neutral-900">
                 Cadastro de Restaurante / Empresa (CNPJ)
               </h2>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-neutral-500">
                 Contrate profissionais com segurança de pagamento retido em Escrow
               </p>
             </div>
@@ -83,7 +83,7 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -92,16 +92,16 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
           {error && (
-            <div className="p-3 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Segment & Icon */}
-          <div className="flex items-center gap-4 p-3 rounded-xl bg-neutral-950 border border-neutral-800">
+          <div className="flex items-center gap-4 p-3 rounded-xl bg-neutral-50 border border-neutral-200">
             <div>
-              <label className="text-[11px] font-semibold text-neutral-400 block mb-1">
+              <label className="text-[11px] font-semibold text-neutral-500 block mb-1">
                 Ícone do Restaurante
               </label>
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -112,8 +112,8 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
                     onClick={() => setAvatarIcon(ic)}
                     className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all ${
                       avatarIcon === ic
-                        ? 'bg-amber-500/20 border-2 border-amber-500 shadow-sm'
-                        : 'border border-neutral-800 hover:bg-neutral-800'
+                        ? 'bg-amber-100 border-2 border-amber-500 shadow-xs'
+                        : 'border border-neutral-200 bg-white hover:bg-neutral-100'
                     }`}
                   >
                     {ic}
@@ -126,7 +126,7 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
           {/* Fields */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Nome Fantasia do Restaurante *
               </label>
               <input
@@ -134,13 +134,13 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Izakaya Maringá, Parrilla Gourmet"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 CNPJ da Empresa *
               </label>
               <input
@@ -148,7 +148,7 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
                 value={cnpj}
                 onChange={(e) => setCnpj(e.target.value)}
                 placeholder="00.000.000/0001-00"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500 font-mono"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500 font-mono"
                 required
               />
             </div>
@@ -156,13 +156,13 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Segmento Culinário
               </label>
               <select
                 value={segment}
                 onChange={(e) => setSegment(e.target.value)}
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
               >
                 <option value="Restaurante Japonês / Sushibar">Restaurante Japonês / Sushibar</option>
                 <option value="Bistrô & Alta Gastronomia">Bistrô & Alta Gastronomia</option>
@@ -174,7 +174,7 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Nome do Gerente / Responsável
               </label>
               <input
@@ -182,13 +182,13 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
                 value={responsibleName}
                 onChange={(e) => setResponsibleName(e.target.value)}
                 placeholder="Ex: Carlos Mendonça"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">
               Endereço Físico do Restaurante (Maringá e Região) *
             </label>
             <input
@@ -196,14 +196,14 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Rua / Av., Número, Bairro/Zona, Maringá - PR"
-              className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+              className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
               required
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 E-mail Corporativo *
               </label>
               <input
@@ -211,13 +211,13 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="contato@restaurante.com.br"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 WhatsApp / Telefone para Contato
               </label>
               <input
@@ -225,22 +225,22 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(44) 99999-9999"
-                className="w-full text-xs rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
 
           {/* Initial Wallet Balance Explanation */}
-          <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-1">
+          <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/70 space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-amber-300">
+              <span className="font-semibold text-amber-900">
                 Crédito Inicial B2B para Testes de Diárias:
               </span>
-              <span className="font-bold text-white font-mono">
+              <span className="font-bold text-neutral-900 font-mono">
                 R$ {initialDeposit.toFixed(2)}
               </span>
             </div>
-            <p className="text-[11px] text-neutral-400">
+            <p className="text-[11px] text-neutral-600">
               Limite pré-aprovado para você poder reservar sushimen e garçons imediatamente via Escrow.
             </p>
           </div>
@@ -250,7 +250,7 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-50 text-neutral-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-50 text-neutral-950 font-bold text-sm transition-all shadow-xs flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
