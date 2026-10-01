@@ -14,6 +14,7 @@ import { LoginModal } from './components/LoginModal';
 import { RegisterCompanyModal } from './components/RegisterCompanyModal';
 import { RegisterFreelancerModal } from './components/RegisterFreelancerModal';
 import { SecurityGuaranteeModal } from './components/SecurityGuaranteeModal';
+import { B2BAuthGateway } from './components/B2BAuthGateway';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import {
@@ -28,7 +29,7 @@ import {
 } from 'lucide-react';
 
 function AppContent() {
-  const { role } = useAuth();
+  const { role, isLoggedIn } = useAuth();
   const [currentTab, setCurrentTab] = useState<AppTab>(
     role === 'FREELANCER' ? 'freelancer' : 'empresa'
   );
@@ -41,21 +42,45 @@ function AppContent() {
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [selectedFreelancerForProfile, setSelectedFreelancerForProfile] = useState<Freelancer | null>(null);
   const [selectedFreelancerForHire, setSelectedFreelancerForHire] = useState<Freelancer | null>(null);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(!isLoggedIn);
   const [isRegisterCompanyOpen, setIsRegisterCompanyOpen] = useState(false);
   const [isRegisterFreelancerOpen, setIsRegisterFreelancerOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Sync tab with role if switched via header
+  // Authentication route guard / middleware:
+  // Immediately opens 'Sessão & Cadastro B2B' on load or logout if user is not authenticated.
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setIsLoginModalOpen(true);
+    } else {
+      setIsLoginModalOpen(false);
+    }
+  }, [isLoggedIn]);
+
+  // Strict role guard / route middleware:
+  // If user role is Empresa, ensure tab cannot be freelancer.
+  // If user role is Freelancer, ensure tab cannot be empresa.
   useEffect(() => {
     if (role === 'FREELANCER' && currentTab === 'empresa') {
       setCurrentTab('freelancer');
     } else if (role === 'EMPRESA' && currentTab === 'freelancer') {
       setCurrentTab('empresa');
     }
-  }, [role]);
+  }, [role, currentTab]);
+
+  const handleSelectTab = (tab: AppTab) => {
+    if (role === 'EMPRESA' && tab === 'freelancer') {
+      setCurrentTab('empresa');
+      return;
+    }
+    if (role === 'FREELANCER' && tab === 'empresa') {
+      setCurrentTab('freelancer');
+      return;
+    }
+    setCurrentTab(tab);
+  };
 
   // Load initial data
   const loadData = async () => {
@@ -190,7 +215,7 @@ function AppContent() {
       {/* Top Bar Contract (3 Zones) */}
       <Header
         currentTab={currentTab}
-        onSelectTab={setCurrentTab}
+        onSelectTab={handleSelectTab}
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onOpenRegisterCompany={() => setIsRegisterCompanyOpen(true)}
         onOpenRegisterFreelancer={() => setIsRegisterFreelancerOpen(true)}
@@ -205,178 +230,193 @@ function AppContent() {
           <PWAInstallButton variant="banner" />
         </div>
 
-        {/* VIEW 1: EMPRESA (Marketplace B2B estilo iFood) */}
-        {currentTab === 'empresa' && (
-          <div className="space-y-8 animate-in fade-in duration-200">
-            {/* Hero / B2B Search Banner */}
-            <div className="relative rounded-2xl border border-neutral-200 bg-gradient-to-br from-white via-amber-50/40 to-orange-50/20 p-6 sm:p-8 overflow-hidden shadow-xs">
-              <div className="relative z-10 max-w-3xl">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-semibold">
-                    <Lock className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Pagamento Retido em Escrow (Cofre Seguro)</span>
-                  </span>
-                  <button
-                    onClick={() => setCurrentTab('mural')}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold hover:bg-rose-100 transition-colors"
-                  >
-                    <Flame className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
-                    <span>{opportunities.filter(o => o.status === 'ABERTA').length} Diárias Urgentes no Mural →</span>
-                  </button>
-                </div>
-
-                <h1 className="text-2xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight leading-tight">
-                  Contrate Sushimen, Garçons e Chefs de Cozinha em Maringá
-                </h1>
-
-                <p className="text-sm sm:text-base text-neutral-600 mt-2 leading-relaxed">
-                  Sem risco de falta ou atraso: o valor fica guardado com a plataforma e só é creditado ao profissional após a realização do check-out.
-                </p>
-
-                {/* Search & Location Bar */}
-                <div className="mt-6 flex flex-col sm:flex-row items-center gap-2.5 bg-white p-2 rounded-xl border border-neutral-200 shadow-xs">
-                  <div className="relative flex-1 w-full">
-                    <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Buscar por cargo, especialidade (ex: Sushiman, Bartender, Faca Yanagiba)..."
-                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-amber-500 focus:bg-white"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-44">
-                      <MapPin className="w-4 h-4 text-amber-600 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <select
-                        value={selectedLocation}
-                        onChange={(e) => setSelectedLocation(e.target.value)}
-                        className="w-full text-xs sm:text-sm pl-9 pr-3 py-2.5 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+        {/* AUTHENTICATION ROUTE GUARD / ACCESS CONTROL:
+            PÁGINA PRINCIPAL (Home): Usuários não autenticados são direcionados
+            exclusivamente para a tela de Sessão e Cadastro B2B. */}
+        {!isLoggedIn ? (
+          <B2BAuthGateway
+            onOpenLogin={() => setIsLoginModalOpen(true)}
+            onOpenRegisterCompany={() => setIsRegisterCompanyOpen(true)}
+            onOpenRegisterFreelancer={() => setIsRegisterFreelancerOpen(true)}
+            onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+          />
+        ) : (
+          /* PÁGINA SECUNDÁRIA: Área 100% segregada por perfil (Empresa OU Freelancer) */
+          <>
+            {/* VIEW 1: EMPRESA (Buscar & Contratar Freelancers) - Exclusivo para EMPRESA */}
+            {currentTab === 'empresa' && role === 'EMPRESA' && (
+              <div className="space-y-8 animate-in fade-in duration-200">
+                {/* Hero / B2B Search Banner */}
+                <div className="relative rounded-2xl border border-neutral-200 bg-gradient-to-br from-white via-amber-50/40 to-orange-50/20 p-6 sm:p-8 overflow-hidden shadow-xs">
+                  <div className="relative z-10 max-w-3xl">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-semibold">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Pagamento Retido em Escrow (Cofre Seguro)</span>
+                      </span>
+                      <button
+                        onClick={() => handleSelectTab('mural')}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold hover:bg-rose-100 transition-colors"
                       >
-                        <option value="all">Todas as Regiões</option>
-                        <option value="Zona 01">Zona 01 / Centro</option>
-                        <option value="Zona 07">Zona 07 / UEM</option>
-                        <option value="Gleba Palhano">Zona 03 / Palhano</option>
-                        <option value="Vila Operária">Vila Operária</option>
-                      </select>
+                        <Flame className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                        <span>{opportunities.filter(o => o.status === 'ABERTA').length} Diárias Urgentes no Mural →</span>
+                      </button>
                     </div>
 
-                    {(searchQuery || selectedCategory !== 'all' || selectedLocation !== 'all') && (
+                    <h1 className="text-2xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight leading-tight">
+                      Contrate Sushimen, Garçons e Chefs de Cozinha em Maringá
+                    </h1>
+
+                    <p className="text-sm sm:text-base text-neutral-600 mt-2 leading-relaxed">
+                      Sem risco de falta ou atraso: o valor fica guardado com a plataforma e só é creditado ao profissional após a realização do check-out.
+                    </p>
+
+                    {/* Search & Location Bar */}
+                    <div className="mt-6 flex flex-col sm:flex-row items-center gap-2.5 bg-white p-2 rounded-xl border border-neutral-200 shadow-xs">
+                      <div className="relative flex-1 w-full">
+                        <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Buscar por cargo, especialidade (ex: Sushiman, Bartender, Faca Yanagiba)..."
+                          className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-amber-500 focus:bg-white"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-44">
+                          <MapPin className="w-4 h-4 text-amber-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <select
+                            value={selectedLocation}
+                            onChange={(e) => setSelectedLocation(e.target.value)}
+                            className="w-full text-xs sm:text-sm pl-9 pr-3 py-2.5 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                          >
+                            <option value="all">Todas as Regiões</option>
+                            <option value="Zona 01">Zona 01 / Centro</option>
+                            <option value="Zona 07">Zona 07 / UEM</option>
+                            <option value="Gleba Palhano">Zona 03 / Palhano</option>
+                            <option value="Vila Operária">Vila Operária</option>
+                          </select>
+                        </div>
+
+                        {(searchQuery || selectedCategory !== 'all' || selectedLocation !== 'all') && (
+                          <button
+                            onClick={() => {
+                              setSearchQuery('');
+                              setSelectedCategory('all');
+                              setSelectedLocation('all');
+                            }}
+                            title="Limpar Filtros"
+                            className="p-2.5 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors shrink-0"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Decorative accent lines */}
+                  <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
+                </div>
+
+                {/* iFood-Style Visual Categories */}
+                <CategoryGrid
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={setSelectedCategory}
+                  freelancerCountsByCat={categoryCounts}
+                />
+
+                {/* Freelancers List Header */}
+                <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                    <div>
+                      <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
+                        <span>Profissionais Disponíveis</span>
+                        <span className="text-xs font-mono text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
+                          {filteredFreelancers.length} encontrados
+                        </span>
+                      </h2>
+                      <p className="text-xs text-neutral-500 mt-0.5">
+                        Avaliações verificadas de outros donos de restaurantes de Maringá e região
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-neutral-600">
+                      <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        100% com Antecedentes & MEI Checados
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Freelancers Grid */}
+                  {loading ? (
+                    <div className="p-16 text-center text-sm text-neutral-500">
+                      Carregando banco de freelancers da gastronomia...
+                    </div>
+                  ) : filteredFreelancers.length === 0 ? (
+                    <div className="p-12 text-center rounded-2xl border border-neutral-200 bg-white space-y-3 shadow-xs">
+                      <AlertCircle className="w-10 h-10 text-neutral-400 mx-auto" />
+                      <h3 className="text-base font-bold text-neutral-900">Nenhum profissional com esses filtros</h3>
+                      <p className="text-xs text-neutral-500">Tente buscar por outro termo ou limpe a categoria selecionada.</p>
                       <button
                         onClick={() => {
                           setSearchQuery('');
                           setSelectedCategory('all');
                           setSelectedLocation('all');
                         }}
-                        title="Limpar Filtros"
-                        className="p-2.5 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors shrink-0"
+                        className="px-4 py-2 rounded-lg bg-amber-500 text-neutral-950 font-bold text-xs hover:bg-amber-400 transition-colors shadow-xs"
                       >
-                        <RotateCcw className="w-4 h-4" />
+                        Restaurar Lista Completa
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {filteredFreelancers.map((freelancer) => (
+                        <FreelancerCard
+                          key={freelancer.id}
+                          freelancer={freelancer}
+                          onSelect={(f) => setSelectedFreelancerForProfile(f)}
+                          onHireDirect={(f) => setSelectedFreelancerForHire(f)}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              {/* Decorative accent lines */}
-              <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
-            </div>
+            {/* VIEW 2: MURAL DE DIÁRIAS URGENTES (Compartilhado com lógica de ação por perfil) */}
+            {currentTab === 'mural' && (
+              <OpportunitiesBoard
+                opportunities={opportunities}
+                onOpportunityCreated={handleOpportunityCreated}
+                onShiftAccepted={handleShiftAccepted}
+              />
+            )}
 
-            {/* iFood-Style Visual Categories */}
-            <CategoryGrid
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-              freelancerCountsByCat={categoryCounts}
-            />
+            {/* VIEW 3: FREELANCER (Painel de Gestão, Check-in e Check-out) - Exclusivo para FREELANCER */}
+            {currentTab === 'freelancer' && role === 'FREELANCER' && (
+              <FreelancerDashboard
+                contracts={contracts}
+                onContractUpdated={handleContractUpdated}
+                onRefresh={loadData}
+                onNavigateToMural={() => handleSelectTab('mural')}
+              />
+            )}
 
-            {/* Freelancers List Header */}
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                <div>
-                  <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
-                    <span>Profissionais Disponíveis</span>
-                    <span className="text-xs font-mono text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
-                      {filteredFreelancers.length} encontrados
-                    </span>
-                  </h2>
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    Avaliações verificadas de outros donos de restaurantes de Maringá e região
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-neutral-600">
-                  <span className="flex items-center gap-1 text-emerald-700 font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    100% com Antecedentes & MEI Checados
-                  </span>
-                </div>
-              </div>
-
-              {/* Freelancers Grid */}
-              {loading ? (
-                <div className="p-16 text-center text-sm text-neutral-500">
-                  Carregando banco de freelancers da gastronomia...
-                </div>
-              ) : filteredFreelancers.length === 0 ? (
-                <div className="p-12 text-center rounded-2xl border border-neutral-200 bg-white space-y-3 shadow-xs">
-                  <AlertCircle className="w-10 h-10 text-neutral-400 mx-auto" />
-                  <h3 className="text-base font-bold text-neutral-900">Nenhum profissional com esses filtros</h3>
-                  <p className="text-xs text-neutral-500">Tente buscar por outro termo ou limpe a categoria selecionada.</p>
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSelectedCategory('all');
-                      setSelectedLocation('all');
-                    }}
-                    className="px-4 py-2 rounded-lg bg-amber-500 text-neutral-950 font-bold text-xs hover:bg-amber-400 transition-colors shadow-xs"
-                  >
-                    Restaurar Lista Completa
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {filteredFreelancers.map((freelancer) => (
-                    <FreelancerCard
-                      key={freelancer.id}
-                      freelancer={freelancer}
-                      onSelect={(f) => setSelectedFreelancerForProfile(f)}
-                      onHireDirect={(f) => setSelectedFreelancerForHire(f)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 2: MURAL DE DIÁRIAS URGENTES */}
-        {currentTab === 'mural' && (
-          <OpportunitiesBoard
-            opportunities={opportunities}
-            onOpportunityCreated={handleOpportunityCreated}
-            onShiftAccepted={handleShiftAccepted}
-          />
-        )}
-
-        {/* VIEW 3: FREELANCER (Painel de Gestão, Check-in e Check-out) */}
-        {currentTab === 'freelancer' && (
-          <FreelancerDashboard
-            contracts={contracts}
-            onContractUpdated={handleContractUpdated}
-            onRefresh={loadData}
-            onNavigateToMural={() => setCurrentTab('mural')}
-          />
-        )}
-
-        {/* VIEW 4: CONTRATOS & ESCROW (Cofre da Plataforma) */}
-        {currentTab === 'contratos' && (
-           <EscrowContractsView
-             contracts={contracts}
-             onContractUpdated={handleContractUpdated}
-             onSelectTab={setCurrentTab}
-             onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
-           />
+            {/* VIEW 4: CONTRATOS & ESCROW (Cofre da Plataforma) */}
+            {currentTab === 'contratos' && (
+               <EscrowContractsView
+                 contracts={contracts}
+                 onContractUpdated={handleContractUpdated}
+                 onSelectTab={handleSelectTab}
+                 onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+               />
+            )}
+          </>
         )}
       </main>
 
@@ -400,25 +440,27 @@ function AppContent() {
               <span>Garantia & Segurança B2B</span>
             </button>
             <span>·</span>
-            <button
-              onClick={() => setIsRegisterCompanyOpen(true)}
-              className="hover:text-amber-700 transition-colors"
-            >
-              Cadastrar Empresa
-            </button>
-            <span>·</span>
-            <button
-              onClick={() => setIsRegisterFreelancerOpen(true)}
-              className="hover:text-emerald-700 transition-colors"
-            >
-              Cadastrar Freelancer
-            </button>
+            {role === 'EMPRESA' ? (
+              <button
+                onClick={() => setIsRegisterCompanyOpen(true)}
+                className="hover:text-amber-700 transition-colors"
+              >
+                + Cadastrar Nova Empresa
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsRegisterFreelancerOpen(true)}
+                className="hover:text-emerald-700 transition-colors"
+              >
+                + Cadastrar Novo Freelancer
+              </button>
+            )}
             <span>·</span>
             <button
               onClick={() => setIsLoginModalOpen(true)}
               className="hover:text-neutral-900 transition-colors"
             >
-              Trocar de Perfil
+              Trocar de Perfil / Sessão
             </button>
           </div>
         </div>
@@ -448,19 +490,26 @@ function AppContent() {
         onClose={() => setIsLoginModalOpen(false)}
         onOpenRegisterCompany={() => setIsRegisterCompanyOpen(true)}
         onOpenRegisterFreelancer={() => setIsRegisterFreelancerOpen(true)}
+        isDismissible={isLoggedIn}
       />
 
       {/* Register Company Modal */}
       <RegisterCompanyModal
         isOpen={isRegisterCompanyOpen}
-        onClose={() => setIsRegisterCompanyOpen(false)}
+        onClose={() => {
+          setIsRegisterCompanyOpen(false);
+          if (!isLoggedIn) setIsLoginModalOpen(true);
+        }}
         onSuccess={handleCompanyRegistered}
       />
 
       {/* Register Freelancer Modal */}
       <RegisterFreelancerModal
         isOpen={isRegisterFreelancerOpen}
-        onClose={() => setIsRegisterFreelancerOpen(false)}
+        onClose={() => {
+          setIsRegisterFreelancerOpen(false);
+          if (!isLoggedIn) setIsLoginModalOpen(true);
+        }}
         onSuccess={handleFreelancerRegistered}
       />
 

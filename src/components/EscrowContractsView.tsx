@@ -119,12 +119,21 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
             </button>
           )}
 
-          <button
-            onClick={() => onSelectTab('empresa')}
-            className="px-4 py-2 text-xs font-bold text-neutral-950 bg-amber-500 hover:bg-amber-400 rounded-lg whitespace-nowrap transition-colors shadow-xs"
-          >
-            + Contratar Nova Diária
-          </button>
+          {session.role === 'EMPRESA' ? (
+            <button
+              onClick={() => onSelectTab('empresa')}
+              className="px-4 py-2 text-xs font-bold text-neutral-950 bg-amber-500 hover:bg-amber-400 rounded-lg whitespace-nowrap transition-colors shadow-xs"
+            >
+              + Contratar Nova Diária
+            </button>
+          ) : (
+            <button
+              onClick={() => onSelectTab('mural')}
+              className="px-4 py-2 text-xs font-bold text-emerald-950 bg-emerald-500 hover:bg-emerald-400 rounded-lg whitespace-nowrap transition-colors shadow-xs"
+            >
+              Ver Diárias Disponíveis
+            </button>
+          )}
         </div>
       </div>
 
@@ -377,13 +386,20 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                   )}
 
                   {contract.status === 'PAGO_E_RETIDO' && (
-                    <button
-                      onClick={() => onSelectTab('freelancer')}
-                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1 shadow-xs"
-                    >
-                      <span>Simular Check-in no Painel do Freela</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                    session.role === 'FREELANCER' ? (
+                      <button
+                        onClick={() => onSelectTab('freelancer')}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center gap-1 shadow-xs"
+                      >
+                        <span>Fazer Check-in no Meu Painel</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <span className="text-xs text-amber-800 bg-amber-100/80 border border-amber-300 px-2.5 py-1 rounded-lg font-medium flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>Aguardando Check-in do Profissional</span>
+                      </span>
+                    )
                   )}
                 </div>
               </div>

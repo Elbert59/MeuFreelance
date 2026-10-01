@@ -7,6 +7,7 @@ interface LoginModalProps {
   onClose: () => void;
   onOpenRegisterCompany: () => void;
   onOpenRegisterFreelancer: () => void;
+  isDismissible?: boolean;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
@@ -14,34 +15,77 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   onClose,
   onOpenRegisterCompany,
   onOpenRegisterFreelancer,
+  isDismissible = true,
 }) => {
-  const { session, allCompanies, availableFreelancers, loginAsCompany, loginAsFreelancer } = useAuth();
+  const { session, allCompanies, availableFreelancers, loginAsCompany, loginAsFreelancer, isLoggedIn } = useAuth();
   const [selectedRole, setSelectedRole] = useState<'EMPRESA' | 'FREELANCER'>(session.role);
 
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && isDismissible) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-neutral-900">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
+    >
+      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden max-h-[92vh] flex flex-col text-neutral-900">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-neutral-50">
-          <div>
-            <h2 className="text-base font-bold text-neutral-900">
-              Sessão & Cadastro B2B
-            </h2>
-            <p className="text-xs text-neutral-500">
-              Alterne entre contas ou cadastre sua empresa / perfil
-            </p>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-700 border border-amber-300 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4 h-4 text-amber-600" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-neutral-900">
+                  Sessão & Cadastro B2B
+                </h2>
+                {!isLoggedIn && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                    Obrigatório
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-neutral-500">
+                {!isLoggedIn
+                  ? 'Identifique-se para liberar a busca de profissionais e diárias'
+                  : 'Alterne entre contas ou cadastre sua empresa / perfil'}
+              </p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {isDismissible ? (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+              title="Fechar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-1 rounded-md border border-amber-200">
+              <span>🔒 Restrito</span>
+            </div>
+          )}
         </div>
 
         <div className="p-6 overflow-y-auto space-y-6">
+          {!isLoggedIn && (
+            <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/80 text-xs text-amber-950 flex items-start gap-2.5 leading-relaxed">
+              <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <div>
+                <strong className="block font-bold text-amber-900">
+                  Acesso Protegido ao Marketplace B2B
+                </strong>
+                Para proteger os dados de contato, especialidades e histórico dos freelancers de gastronomia em Maringá, crie uma conta ou selecione um perfil de teste abaixo.
+              </div>
+            </div>
+          )}
+
           {/* Quick Registration CTAs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
@@ -212,12 +256,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               Sessão persistida no navegador
             </span>
-            <button
-              onClick={onClose}
-              className="px-3 py-1.5 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
-            >
-              Fechar
-            </button>
+            {isDismissible ? (
+              <button
+                onClick={onClose}
+                className="px-3 py-1.5 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
+              >
+                Fechar
+              </button>
+            ) : (
+              <span className="text-[11px] text-amber-700 font-medium">
+                Escolha uma conta para entrar
+              </span>
+            )}
           </div>
         </div>
       </div>

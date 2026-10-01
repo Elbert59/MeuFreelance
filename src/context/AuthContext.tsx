@@ -19,11 +19,21 @@ interface AuthContextType {
 }
 
 const STORAGE_AUTH_KEY = 'chefmatch_auth_session_v2';
+const AUTH_STATUS_KEY = 'chefmatch_is_authenticated_v2';
 const defaultCompany = MOCK_COMPANIES[0];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    try {
+      const storedAuth = localStorage.getItem(AUTH_STATUS_KEY);
+      return storedAuth === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [session, setSession] = useState<UserSession>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_AUTH_KEY);
@@ -38,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [allCompanies, setAllCompanies] = useState<UserSession[]>([...MOCK_COMPANIES]);
   const [availableFreelancers, setAvailableFreelancers] = useState<Freelancer[]>([...FREELANCERS]);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
 
   // Load dynamically registered companies and freelancers
   const refreshUsers = async () => {
@@ -70,6 +79,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const selected = allCompanies.find((c) => c.id === companyId) || allCompanies[0] || defaultCompany;
     setSession(selected);
     setIsLoggedIn(true);
+    try {
+      localStorage.setItem(AUTH_STATUS_KEY, 'true');
+      localStorage.setItem(STORAGE_AUTH_KEY, JSON.stringify(selected));
+    } catch (e) {
+      console.error('Failed to persist auth status', e);
+    }
   };
 
   const loginAsFreelancer = (freelancerId?: string) => {
@@ -85,6 +100,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setSession(newSession);
     setIsLoggedIn(true);
+    try {
+      localStorage.setItem(AUTH_STATUS_KEY, 'true');
+      localStorage.setItem(STORAGE_AUTH_KEY, JSON.stringify(newSession));
+    } catch (e) {
+      console.error('Failed to persist auth status', e);
+    }
   };
 
   const switchRole = () => {
@@ -102,6 +123,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAllCompanies((prev) => [newCompany, ...prev]);
     setSession(newCompany);
     setIsLoggedIn(true);
+    try {
+      localStorage.setItem(AUTH_STATUS_KEY, 'true');
+      localStorage.setItem(STORAGE_AUTH_KEY, JSON.stringify(newCompany));
+    } catch (e) {
+      console.error('Failed to persist auth status', e);
+    }
     return newCompany;
   };
 
@@ -123,11 +150,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setSession(newSession);
     setIsLoggedIn(true);
+    try {
+      localStorage.setItem(AUTH_STATUS_KEY, 'true');
+      localStorage.setItem(STORAGE_AUTH_KEY, JSON.stringify(newSession));
+    } catch (e) {
+      console.error('Failed to persist auth status', e);
+    }
     return newFreelancer;
   };
 
   const logout = () => {
     setIsLoggedIn(false);
+    try {
+      localStorage.setItem(AUTH_STATUS_KEY, 'false');
+    } catch (e) {
+      console.error('Failed to save logout state', e);
+    }
   };
 
   return (
