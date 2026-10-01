@@ -127,7 +127,7 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
             onClick={() => setFilterStatus(f.id)}
             className={`px-3 py-1.5 rounded-lg border font-medium whitespace-nowrap transition-colors ${
               filterStatus === f.id
-                ? 'bg-neutral-900 text-white border-neutral-900 font-semibold shadow-xs'
+                ? 'bg-amber-500 text-neutral-950 border-amber-500 font-bold shadow-xs'
                 : 'bg-white text-neutral-600 border-neutral-200 hover:text-neutral-900 hover:bg-neutral-50'
             }`}
           >
@@ -348,7 +348,7 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                   {contract.status === 'PAGO_E_RETIDO' && (
                     <button
                       onClick={() => onSelectTab('freelancer')}
-                      className="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs transition-colors flex items-center gap-1 shadow-xs"
+                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1 shadow-xs"
                     >
                       <span>Simular Check-in no Painel do Freela</span>
                       <ArrowRight className="w-3.5 h-3.5" />

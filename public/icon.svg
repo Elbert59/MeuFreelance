@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle with padding for maskable safe-zone -->
+  <rect width="512" height="512" rx="128" fill="url(#amberGrad)" />
+
+  <!-- Inner white circular plate -->
+  <circle cx="256" cy="256" r="176" fill="#ffffff" filter="url(#shadow)" />
+
+  <!-- Chef Hat / Cloche / Monogram Icon -->
+  <g transform="translate(146, 136)" fill="#d97706">
+    <!-- Chef Hat Base -->
+    <path d="M 30 160 L 190 160 L 180 190 L 40 190 Z" rx="6" />
+    <rect x="36" y="166" width="148" height="18" rx="4" fill="#f59e0b" />
+    
+    <!-- Chef Hat Puffs -->
+    <path d="M 36 150 C 10 150 0 110 20 85 C 10 50 45 30 75 45 C 95 15 135 15 150 45 C 180 30 210 55 200 85 C 220 110 210 150 184 150 Z" />
+    
+    <!-- Fork & Knife crossed accent in center -->
+    <circle cx="110" cy="105" r="28" fill="#ffffff" />
+    <text x="110" y="114" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="24" fill="#d97706" text-anchor="middle">CM</text>
+  </g>
+</svg>

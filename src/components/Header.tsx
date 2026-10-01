@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { PWAInstallButton } from './PWAInstallButton';
 import {
   ShieldCheck,
   ArrowLeftRight,
@@ -140,6 +141,9 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
+          {/* PWA Install Button */}
+          <PWAInstallButton variant="header" />
+
           {/* Profile & Wallet */}
           <button
             onClick={onOpenLogin}
@@ -189,6 +193,9 @@ export const Header: React.FC<HeaderProps> = ({
         >
           Check-in Freela
         </button>
+        <div className="shrink-0">
+          <PWAInstallButton variant="header" />
+        </div>
       </div>
     </header>
   );

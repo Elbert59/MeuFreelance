@@ -13,6 +13,8 @@ import { OpportunitiesBoard } from './components/OpportunitiesBoard';
 import { LoginModal } from './components/LoginModal';
 import { RegisterCompanyModal } from './components/RegisterCompanyModal';
 import { RegisterFreelancerModal } from './components/RegisterFreelancerModal';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import {
   Search,
   MapPin,
@@ -195,6 +197,11 @@ function AppContent() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* PWA Mobile App Callout Banner */}
+        <div className="mb-6">
+          <PWAInstallButton variant="banner" />
+        </div>
+
         {/* VIEW 1: EMPRESA (Marketplace B2B estilo iFood) */}
         {currentTab === 'empresa' && (
           <div className="space-y-8 animate-in fade-in duration-200">
@@ -444,6 +451,9 @@ function AppContent() {
         onClose={() => setIsRegisterFreelancerOpen(false)}
         onSuccess={handleFreelancerRegistered}
       />
+
+      {/* Connectivity & Offline Status */}
+      <OfflineIndicator />
     </div>
   );
 }
