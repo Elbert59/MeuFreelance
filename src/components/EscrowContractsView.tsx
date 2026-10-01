@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { RatingModal } from './RatingModal';
 import { ContractChatModal } from './ContractChatModal';
 import { ServiceContractModal } from './ServiceContractModal';
+import { ManagerQrScannerModal } from './ManagerQrScannerModal';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -22,6 +23,9 @@ import {
   Loader2,
   AlertTriangle,
   FileText,
+  ScanLine,
+  QrCode,
+  Camera,
 } from 'lucide-react';
 
 interface EscrowContractsViewProps {
@@ -44,6 +48,8 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [scannerTargetContract, setScannerTargetContract] = useState<Contract | null>(null);
 
   const filteredContracts = contracts.filter((c) => {
     if (filterStatus === 'all') return true;
@@ -180,6 +186,19 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Ver Pilares de Segurança</span>
+            </button>
+          )}
+
+          {session.role === 'EMPRESA' && (
+            <button
+              onClick={() => {
+                setScannerTargetContract(null);
+                setIsQrScannerOpen(true);
+              }}
+              className="px-3.5 py-2 text-xs font-black text-white bg-neutral-900 hover:bg-neutral-800 rounded-lg whitespace-nowrap transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <ScanLine className="w-4 h-4 text-amber-400" />
+              <span>Escanear QR Code</span>
             </button>
           )}
 
@@ -439,32 +458,41 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                     <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                          <Clock className="w-4 h-4 text-amber-700" />
-                          <span>Aguardando Início de Diária pelo Freelancer:</span>
+                          <QrCode className="w-4 h-4 text-amber-700" />
+                          <span>Início Presencial por QR Code:</span>
                         </div>
-                        <p className="text-[11px] text-amber-800 leading-relaxed">
-                          O profissional deve iniciar a diária pelo aplicativo ao se apresentar ao restaurante. Você também pode confirmar o início de turno presencial diretamente.
+                        <p className="text-[11px] text-amber-800 leading-relaxed max-w-xl">
+                          O profissional gera o QR Code no app dele na chegada ao restaurante. Escaneie com a câmera para validar a presença física e iniciar o turno.
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleManagerCheckIn(contract)}
-                        disabled={loadingAction === `checkin-${contract.id}`}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors shrink-0 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        {loadingAction === `checkin-${contract.id}` ? (
-                          <>
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScannerTargetContract(contract);
+                            setIsQrScannerOpen(true);
+                          }}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-xs transition-colors shrink-0 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <ScanLine className="w-4 h-4" />
+                          <span>Escanear QR de Início</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleManagerCheckIn(contract)}
+                          disabled={loadingAction === `checkin-${contract.id}`}
+                          className="w-full sm:w-auto px-3 py-2.5 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 font-bold text-xs transition-colors shrink-0 flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                          title="Confirmar início direto sem câmera"
+                        >
+                          {loadingAction === `checkin-${contract.id}` ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Iniciando...</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Confirmar Início Presencial</span>
-                          </>
-                        )}
-                      </button>
+                          ) : (
+                            <span>Iniciar Direto</span>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -473,31 +501,40 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 font-bold text-sky-950 text-sm">
                           <Clock className="w-4 h-4 text-sky-700 animate-spin" />
-                          <span>Expediente em Andamento · Finalização Exclusiva do Gerente</span>
+                          <span>Expediente em Andamento · Encerramento via QR Code</span>
                         </div>
                         <p className="text-[11px] text-sky-800 leading-relaxed max-w-xl">
-                          Iniciado às {new Date(contract.checkInAt || Date.now()).toLocaleTimeString()} pelo profissional. Por segurança, apenas o gerente pode finalizar a diária e aprovar a conclusão do turno para liberação dos fundos em custódia.
+                          Iniciado às {new Date(contract.checkInAt || Date.now()).toLocaleTimeString()} pelo profissional. Ao término do expediente, escaneie o QR Code de saída gerado pelo freelancer para homologar a conclusão e liberar o Pix em custódia.
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleManagerCheckOut(contract)}
-                        disabled={loadingAction === `checkout-${contract.id}`}
-                        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-extrabold text-xs transition-all shadow-md shadow-sky-600/20 shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        {loadingAction === `checkout-${contract.id}` ? (
-                          <>
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScannerTargetContract(contract);
+                            setIsQrScannerOpen(true);
+                          }}
+                          className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs transition-all shadow-md shadow-emerald-600/20 shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <ScanLine className="w-4 h-4 text-emerald-200" />
+                          <span>Escanear QR de Saída & Finalizar</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleManagerCheckOut(contract)}
+                          disabled={loadingAction === `checkout-${contract.id}`}
+                          className="w-full sm:w-auto px-3.5 py-3 rounded-xl border border-sky-300 bg-white hover:bg-sky-50 text-sky-900 font-bold text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                          title="Finalizar diária diretamente sem escanear"
+                        >
+                          {loadingAction === `checkout-${contract.id}` ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Finalizando diária...</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 text-sky-200" />
-                            <span>Finalizar Diária & Homologar Término</span>
-                          </>
-                        )}
-                      </button>
+                          ) : (
+                            <span>Finalizar Direto</span>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -611,6 +648,22 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
         <ContractChatModal
           contract={chatContract}
           onClose={() => setChatContract(null)}
+        />
+      )}
+
+      {/* Manager QR Scanner Modal */}
+      {isQrScannerOpen && (
+        <ManagerQrScannerModal
+          isOpen={isQrScannerOpen}
+          contracts={contracts}
+          targetContract={scannerTargetContract}
+          onClose={() => {
+            setIsQrScannerOpen(false);
+            setScannerTargetContract(null);
+          }}
+          onContractUpdated={(updated) => {
+            onContractUpdated(updated);
+          }}
         />
       )}
     </div>

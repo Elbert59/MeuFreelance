@@ -311,6 +311,9 @@ class Database {
     updates: {
       status?: ContractStatus;
       pin?: string;
+      qrToken?: string;
+      startQrToken?: string;
+      endQrToken?: string;
       earlyExitReason?: string;
       managerApprovedOut?: boolean;
       callerRole?: 'EMPRESA' | 'FREELANCER';
@@ -330,6 +333,14 @@ class Database {
     const now = new Date().toISOString();
     if (!contract.auditTrail) contract.auditTrail = [];
 
+    // Save tokens if provided
+    if (updates.startQrToken) {
+      contract.startQrToken = updates.startQrToken;
+    }
+    if (updates.endQrToken) {
+      contract.endQrToken = updates.endQrToken;
+    }
+
     // Allow updating checkInAt timestamp (e.g. for time simulator testing)
     if (updates.checkInAt) {
       contract.checkInAt = updates.checkInAt;
@@ -344,23 +355,24 @@ class Database {
       }
 
       // ==========================================
-      // REGRA: INÍCIO DE DIÁRIA (O FREELANCER INICIA)
+      // REGRA: INÍCIO DE DIÁRIA (QR CODE / CHECK-IN)
       // ==========================================
       if (updates.status === 'CHECKIN_REALIZADO') {
         contract.status = 'CHECKIN_REALIZADO';
         contract.checkInAt = updates.checkInAt || now;
+        contract.startQrScannedAt = now;
         contract.shiftComplianceStatus = 'EM_ANDAMENTO';
         contract.auditTrail.push({
           timestamp: now,
-          action: 'INICIO_DIARIA_REGISTRADO',
-          details: updates.callerRole === 'FREELANCER'
-            ? `Diária iniciada pelo freelancer (${contract.freelancerName}) via aplicativo.`
-            : 'Presença no local confirmada diretamente pelo gerente da empresa.',
+          action: 'CHECKIN_QRCODE_VALIDADO',
+          details: updates.callerRole === 'EMPRESA'
+            ? 'QR Code do freelancer escaneado pelo gerente. Presença física validada e diária iniciada.'
+            : `Início de diária registrado pelo freelancer (${contract.freelancerName}).`,
         });
       }
 
       // ==========================================
-      // REGRA: FINALIZAÇÃO DE DIÁRIA (APENAS O GERENTE)
+      // REGRA: FINALIZAÇÃO DE DIÁRIA (QR CODE / ENCERRAMENTO PELO GERENTE)
       // ==========================================
       else if (updates.status === 'CONCLUIDO') {
         if (!contract.checkInAt) {
@@ -370,7 +382,7 @@ class Database {
         // Apenas o gerente pode finalizar a diária!
         if (updates.callerRole === 'FREELANCER') {
           throw new Error(
-            'Permissão Negada: Apenas o gerente do estabelecimento pode finalizar a diária e aprovar a conclusão do expediente.'
+            'Permissão Negada: Apenas o gerente do estabelecimento pode finalizar a diária ao escanear o QR Code de saída do freelancer.'
           );
         }
 
@@ -381,6 +393,7 @@ class Database {
 
         contract.status = 'CONCLUIDO';
         contract.checkOutAt = now;
+        contract.endQrScannedAt = now;
         contract.workedMinutes = elapsedMinutes;
         contract.earlyExitReason = updates.earlyExitReason ? sanitizeInput(updates.earlyExitReason, 200) : undefined;
         contract.managerApprovedOut = true;
@@ -388,8 +401,8 @@ class Database {
 
         contract.auditTrail.push({
           timestamp: now,
-          action: 'DIARIA_FINALIZADA_GERENTE',
-          details: `Diária finalizada pelo gerente. Minutos trabalhados: ${elapsedMinutes}min de ${minMinutes}min. Status: ${contract.shiftComplianceStatus}.`,
+          action: 'CHECKOUT_QRCODE_VALIDADO',
+          details: `QR Code de encerramento escaneado pelo gerente. Minutos trabalhados: ${elapsedMinutes}min. Status: ${contract.shiftComplianceStatus}.`,
         });
       }
 
@@ -802,10 +815,25 @@ async function startServer() {
   app.patch('/api/contracts/:id', (req: Request, res: Response) => {
     try {
       const id = sanitizeInput(req.params.id, 50);
-      const { status, pin, earlyExitReason, managerApprovedOut, callerRole, checkInAt, simulatedElapsedMinutes, review } = req.body;
+      const {
+        status,
+        pin,
+        qrToken,
+        startQrToken,
+        endQrToken,
+        earlyExitReason,
+        managerApprovedOut,
+        callerRole,
+        checkInAt,
+        simulatedElapsedMinutes,
+        review,
+      } = req.body;
       const updated = db.updateContract(id, {
         status,
         pin: pin ? sanitizeInput(pin, 10) : undefined,
+        qrToken: qrToken ? sanitizeInput(qrToken, 200) : undefined,
+        startQrToken: startQrToken ? sanitizeInput(startQrToken, 200) : undefined,
+        endQrToken: endQrToken ? sanitizeInput(endQrToken, 200) : undefined,
         earlyExitReason: earlyExitReason ? sanitizeInput(earlyExitReason, 200) : undefined,
         managerApprovedOut: Boolean(managerApprovedOut),
         callerRole,

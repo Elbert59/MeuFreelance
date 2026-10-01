@@ -85,9 +85,13 @@ export interface Contract {
   escrowHash?: string; // Hash criptográfico de custódia antifraude (SHA-256)
   auditTrail?: Array<{ timestamp: string; action: string; details?: string }>;
 
-  // PROTEÇÃO ANTIFRAUDE & CUMPRIMENTO DE HORÁRIO OBRIGATÓRIO
-  checkInPin?: string; // PIN seguro de 4 dígitos gerado pelo restaurante para validar presença física
-  checkOutPin?: string; // PIN seguro de 4 dígitos fornecido pelo gerente para aprovar liberação de saída
+  // PROTEÇÃO ANTIFRAUDE & CUMPRIMENTO DE HORÁRIO OBRIGATÓRIO (QR CODE)
+  startQrToken?: string; // Token dinâmico do QR Code de início gerado pelo freelance
+  endQrToken?: string; // Token dinâmico do QR Code de encerramento gerado pelo freelance
+  startQrScannedAt?: string; // Data/Hora da leitura do QR Code pelo gerente
+  endQrScannedAt?: string; // Data/Hora da leitura do QR Code de saída pelo gerente
+  checkInPin?: string; // Compatibilidade legada
+  checkOutPin?: string; // Compatibilidade legada
   minShiftDurationMinutes?: number; // Duração mínima calculada do expediente (em minutos)
   workedMinutes?: number; // Minutos reais trabalhados
   shiftComplianceStatus?: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDO_NO_HORARIO' | 'SAIDA_ANTECIPADA_AUTORIZADA' | 'HORARIO_INCOMPLETO' | 'FINALIZADO_PELO_GERENTE';

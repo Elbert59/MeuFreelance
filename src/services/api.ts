@@ -67,6 +67,9 @@ export interface UpdateContractPayload {
   contractId: string;
   status?: ContractStatus;
   pin?: string;
+  qrToken?: string;
+  startQrToken?: string;
+  endQrToken?: string;
   earlyExitReason?: string;
   managerApprovedOut?: boolean;
   callerRole?: 'EMPRESA' | 'FREELANCER';
@@ -292,6 +295,14 @@ export const api = {
   },
 
   /**
+   * Get single contract by ID
+   */
+  async getContractById(id: string): Promise<Contract | null> {
+    const list = await this.getContracts();
+    return list.find((c) => c.id === id) || null;
+  },
+
+  /**
    * POST /api/contracts (Criar Contrato com Retenção no Cofre Escrow)
    */
   async createContract(payload: CreateContractPayload): Promise<Contract> {
@@ -355,6 +366,9 @@ export const api = {
         body: JSON.stringify({
           status: payload.status,
           pin: payload.pin,
+          qrToken: payload.qrToken,
+          startQrToken: payload.startQrToken,
+          endQrToken: payload.endQrToken,
           earlyExitReason: payload.earlyExitReason,
           managerApprovedOut: payload.managerApprovedOut,
           callerRole: payload.callerRole,
@@ -388,6 +402,9 @@ export const api = {
     const updated = { ...cachedContracts[index] };
     const now = new Date().toISOString();
 
+    if (payload.startQrToken) updated.startQrToken = payload.startQrToken;
+    if (payload.endQrToken) updated.endQrToken = payload.endQrToken;
+
     if (payload.checkInAt) {
       updated.checkInAt = payload.checkInAt;
     }
@@ -396,6 +413,7 @@ export const api = {
       if (payload.status === 'CHECKIN_REALIZADO') {
         updated.status = 'CHECKIN_REALIZADO';
         updated.checkInAt = payload.checkInAt || now;
+        updated.startQrScannedAt = now;
         updated.shiftComplianceStatus = 'EM_ANDAMENTO';
       } else if (payload.status === 'CONCLUIDO') {
         if (!updated.checkInAt) {
@@ -416,6 +434,7 @@ export const api = {
 
         updated.status = 'CONCLUIDO';
         updated.checkOutAt = now;
+        updated.endQrScannedAt = now;
         updated.workedMinutes = elapsedMinutes;
         updated.earlyExitReason = payload.earlyExitReason;
         updated.managerApprovedOut = true;

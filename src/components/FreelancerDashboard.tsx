@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { RatingModal } from './RatingModal';
 import { ContractChatModal } from './ContractChatModal';
 import { CheckInModal } from './CheckInModal';
+import { FreelancerQrModal } from './FreelancerQrModal';
 import { ServiceContractModal } from './ServiceContractModal';
 import { calculateShiftCompliance } from '../utils/security';
 import {
@@ -27,6 +28,8 @@ import {
   Sparkles,
   Lock,
   FileText,
+  QrCode,
+  ScanLine,
 } from 'lucide-react';
 
 interface FreelancerDashboardProps {
@@ -46,6 +49,7 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
   const [selectedContractForRating, setSelectedContractForRating] = useState<Contract | null>(null);
   const [chatContract, setChatContract] = useState<Contract | null>(null);
   const [checkInModalContract, setCheckInModalContract] = useState<Contract | null>(null);
+  const [qrModalContract, setQrModalContract] = useState<{ contract: Contract; type: 'CHECKIN' | 'CHECKOUT' } | null>(null);
   const [viewingContractDoc, setViewingContractDoc] = useState<Contract | null>(null);
   const [ticker, setTicker] = useState(0);
 
@@ -385,25 +389,24 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
                 <div className="space-y-3">
                   <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                      <QrCode className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>
-                        <strong>Diária Pronta para Início:</strong> Ao chegar ao estabelecimento, confirme sua presença física para registrar o início oficial da sua diária.
+                        <strong>Início por QR Code:</strong> Gere seu QR Code presencial e apresente ao gerente do restaurante na sua chegada para validação imediata.
                       </span>
                     </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-3">
                     <button
-                      onClick={() => setCheckInModalContract(activeShift)}
-                      disabled={loadingAction === `checkin-${activeShift.id}`}
-                      className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-neutral-950 font-extrabold text-base transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 group cursor-pointer"
+                      onClick={() => setQrModalContract({ contract: activeShift, type: 'CHECKIN' })}
+                      className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-neutral-950 font-extrabold text-base transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2.5 group cursor-pointer"
                     >
-                      <Clock className="w-5 h-5" />
-                      <span>Iniciar Diária de Trabalho</span>
+                      <QrCode className="w-5 h-5 text-neutral-950" />
+                      <span>Gerar QR Code de Início de Diária</span>
                       <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                     <p className="text-[11px] text-neutral-500 text-center sm:text-left sm:max-w-xs">
-                      Validação presencial com GPS integrado. O cronômetro oficial do turno inicia imediatamente após a sua confirmação.
+                      O gerente escaneia seu código com a câmera do restaurante para autenticar sua presença e iniciar a diária.
                     </p>
                   </div>
                 </div>
@@ -553,30 +556,41 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
                     </div>
                   </div>
 
-                  {/* Manager-Only Finalization Notice Banner (Freelancer cannot finalize) */}
-                  <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-50 via-white to-amber-50/50 border border-amber-200 text-xs text-amber-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+                  {/* QR Code Finalization Notice Banner */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-emerald-50/50 border border-emerald-200 text-xs text-neutral-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
                     <div className="space-y-1.5 max-w-xl">
-                      <div className="flex items-center gap-2 font-bold text-amber-950 text-sm">
-                        <Lock className="w-4 h-4 text-amber-700 shrink-0" />
-                        <span>Apenas o Gerente pode Finalizar a Diária</span>
+                      <div className="flex items-center gap-2 font-bold text-emerald-950 text-sm">
+                        <QrCode className="w-4 h-4 text-emerald-700 shrink-0" />
+                        <span>Encerramento Seguro via QR Code</span>
                       </div>
-                      <p className="text-xs text-amber-900/90 leading-relaxed">
-                        Para garantir a segurança do contrato e a integridade da escala, o encerramento do turno é homologado <strong>exclusivamente pelo gerente do restaurante ({activeShift.companyName})</strong>. Ao concluir seu serviço, avise a liderança para vistoriar seu posto e finalizar a diária no painel da empresa.
+                      <p className="text-xs text-neutral-700 leading-relaxed">
+                        Ao concluir suas atividades no restaurante <strong>{activeShift.companyName}</strong>, gere o QR Code de encerramento para que o gerente escaneie e homologue a conclusão da sua diária.
                       </p>
-                      <div className="pt-1 flex items-center gap-2 text-[11px] text-amber-800 font-medium">
+                      <div className="pt-1 flex items-center gap-2 text-[11px] text-emerald-800 font-medium">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>Pagamento de R$ {activeShift.dailyRate.toFixed(2)} garantido no Escrow · Liberação imediata via Pix após homologação do gerente.</span>
+                        <span>Pagamento de R$ {activeShift.dailyRate.toFixed(2)} garantido no Escrow · Liberação imediata via Pix após a leitura do gerente.</span>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setChatContract(activeShift)}
-                      className="w-full md:w-auto px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-neutral-950 font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-                    >
-                      <MessageSquare className="w-4 h-4 text-neutral-950" />
-                      <span>Avisar Gerente via Chat</span>
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setQrModalContract({ contract: activeShift, type: 'CHECKOUT' })}
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <QrCode className="w-4 h-4" />
+                        <span>Gerar QR Code de Encerramento</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setChatContract(activeShift)}
+                        className="w-full sm:w-auto px-4 py-3 rounded-xl bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-800 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <MessageSquare className="w-4 h-4 text-neutral-600" />
+                        <span>Chat</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -749,6 +763,20 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
           onSuccess={(updated) => {
             onContractUpdated(updated);
             setCheckInModalContract(null);
+          }}
+        />
+      )}
+
+      {/* Dynamic QR Code Modal (Check-in / Check-out) */}
+      {qrModalContract && (
+        <FreelancerQrModal
+          isOpen={!!qrModalContract}
+          contract={qrModalContract.contract}
+          type={qrModalContract.type}
+          onClose={() => setQrModalContract(null)}
+          onSuccess={(updated) => {
+            onContractUpdated(updated);
+            setQrModalContract(null);
           }}
         />
       )}
