@@ -61,10 +61,24 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          // Instrução CRUCIAL para o PWA funcionar no GitHub Pages sem ficar em branco
+          globPatterns: ['**/*.{js,css,ico,png,svg,woff,woff2}'],
+          clientsClaim: true,
+          skipWaiting: true,
+          cleanupOutdatedCaches: true,
           navigateFallback: `${base}index.html`,
           runtimeCaching: [
+            {
+              // Crucial: Always check network first for page navigation so published updates apply automatically
+              urlPattern: ({ request }) => request.mode === 'navigate',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'html-navigation-cache',
+                networkTimeoutSeconds: 3,
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler: 'CacheFirst',

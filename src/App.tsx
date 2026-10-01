@@ -17,6 +17,7 @@ import { SecurityGuaranteeModal } from './components/SecurityGuaranteeModal';
 import { B2BAuthGateway } from './components/B2BAuthGateway';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { useAutoUpdate } from './hooks/useAutoUpdate';
 import {
   Search,
   MapPin,
@@ -82,9 +83,8 @@ function AppContent() {
     setCurrentTab(tab);
   };
 
-  // Load initial data
-  const loadData = async () => {
-    setLoading(true);
+  // Silent background data sync without showing loading spinners
+  const refreshDataSilently = async () => {
     try {
       const [freelas, ctrs, opps] = await Promise.all([
         api.getFreelancers(),
@@ -94,16 +94,30 @@ function AppContent() {
       setFreelancers(freelas);
       setContracts(ctrs);
       setOpportunities(opps);
-    } catch (e) {
-      console.error('Failed to load data', e);
-    } finally {
-      setLoading(false);
+    } catch {
+      // Ignore background sync errors
     }
+  };
+
+  // Initial load
+  const loadData = async () => {
+    setLoading(true);
+    await refreshDataSilently();
+    setLoading(false);
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Automatic updates:
+  // 1. Checks server version/build timestamp and auto-refreshes code whenever updates are deployed
+  // 2. Polls real-time data silently every 5 seconds so shifts, contracts, and freelancers update automatically
+  useAutoUpdate({
+    onDataRefresh: refreshDataSilently,
+    pollIntervalMs: 5000,
+    checkVersionIntervalMs: 15000,
+  });
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

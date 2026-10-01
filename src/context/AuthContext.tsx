@@ -65,6 +65,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     refreshUsers();
+
+    // Auto-refresh users list every 8 seconds and on focus/storage
+    const interval = setInterval(refreshUsers, 8000);
+    const handleSync = () => refreshUsers();
+
+    window.addEventListener('focus', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
   }, []);
 
   useEffect(() => {

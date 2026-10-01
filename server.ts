@@ -805,6 +805,19 @@ async function startServer() {
     }
   });
 
+  // Application Build / Version Check (Auto-Update Support)
+  const serverBuildTimestamp = Date.now();
+  app.get('/api/version', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json({
+      version: '2.1.0',
+      timestamp: serverBuildTimestamp,
+      environment: process.env.NODE_ENV || 'development',
+    });
+  });
+
   // Database Reset (for clean demo testing)
   app.post('/api/reset', (_req: Request, res: Response) => {
     db.resetAll();
@@ -823,8 +836,23 @@ async function startServer() {
   } else {
     const distPath = path.resolve(__dirname, 'dist');
     if (fs.existsSync(distPath)) {
+      // Ensure sw.js is never cached by browser HTTP cache
+      app.get('/sw.js', (_req: Request, res: Response) => {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('Content-Type', 'application/javascript');
+        res.sendFile(path.resolve(distPath, 'sw.js'));
+      });
+
+      // Serve static assets with standard caching
       app.use(express.static(distPath));
+
+      // Ensure index.html always forces revalidation so users get fresh bundles immediately
       app.get('*', (_req: Request, res: Response) => {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.sendFile(path.resolve(distPath, 'index.html'));
       });
     }
