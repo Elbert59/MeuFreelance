@@ -273,6 +273,10 @@ export const INITIAL_CONTRACTS: Contract[] = [
     createdAt: '2026-09-28T14:30:00Z',
     paidAt: '2026-09-28T14:32:10Z',
     notes: 'Traga facas Yanagiba. Turno com casa cheia e reserva de 40 pessoas no balcão.',
+    checkInPin: '8412',
+    checkOutPin: '5930',
+    minShiftDurationMinutes: 375,
+    shiftComplianceStatus: 'PENDENTE',
   },
   {
     id: 'CTR-2026-079',
@@ -296,6 +300,12 @@ export const INITIAL_CONTRACTS: Contract[] = [
     checkInAt: '2026-09-27T17:55:00Z',
     checkOutAt: '2026-09-28T00:10:00Z',
     releasedAt: '2026-09-28T00:15:00Z',
+    checkInPin: '7205',
+    checkOutPin: '3819',
+    minShiftDurationMinutes: 360,
+    workedMinutes: 375,
+    shiftComplianceStatus: 'CONCLUIDO_NO_HORARIO',
+    managerApprovedOut: true,
     freelancerReview: {
       rating: 5,
       tags: ['Ambiente Organizado', 'Pagamento Pontual', 'Equipe Acolhedora'],

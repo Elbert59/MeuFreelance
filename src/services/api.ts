@@ -66,6 +66,12 @@ export interface CreateContractPayload {
 export interface UpdateContractPayload {
   contractId: string;
   status?: ContractStatus;
+  pin?: string;
+  earlyExitReason?: string;
+  managerApprovedOut?: boolean;
+  callerRole?: 'EMPRESA' | 'FREELANCER';
+  checkInAt?: string;
+  simulatedElapsedMinutes?: number;
   review?: {
     type: 'company' | 'freelancer';
     data: ContractReview;
@@ -346,7 +352,16 @@ export const api = {
       const res = await fetch(`/api/contracts/${payload.contractId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: payload.status, review: payload.review }),
+        body: JSON.stringify({
+          status: payload.status,
+          pin: payload.pin,
+          earlyExitReason: payload.earlyExitReason,
+          managerApprovedOut: payload.managerApprovedOut,
+          callerRole: payload.callerRole,
+          checkInAt: payload.checkInAt,
+          simulatedElapsedMinutes: payload.simulatedElapsedMinutes,
+          review: payload.review,
+        }),
       });
 
       if (res.ok) {
@@ -354,23 +369,89 @@ export const api = {
         cachedContracts = cachedContracts.map((c) => (c.id === updated.id ? updated : c));
         saveCache(STORAGE_KEYS.CONTRACTS, cachedContracts);
         return updated;
+      } else {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.error || 'Erro ao atualizar contrato');
       }
-    } catch (e) {
-      console.warn('[API] Network error updating contract, using fallback', e);
+    } catch (e: any) {
+      // Re-throw antifraud validation errors directly
+      if (e?.message && (e.message.includes('Bloqueio Antifraude') || e.message.includes('Fraude interceptada'))) {
+        throw e;
+      }
+      console.warn('[API] Network error updating contract, using local anti-fraud fallback', e);
     }
 
-    // Fallback update
+    // Fallback update with strict anti-fraud parity
     const index = cachedContracts.findIndex((c) => c.id === payload.contractId);
     if (index === -1) throw new Error('Contrato não encontrado');
 
     const updated = { ...cachedContracts[index] };
     const now = new Date().toISOString();
 
+    if (payload.checkInAt) {
+      updated.checkInAt = payload.checkInAt;
+    }
+
     if (payload.status) {
-      updated.status = payload.status;
-      if (payload.status === 'CHECKIN_REALIZADO') updated.checkInAt = now;
-      if (payload.status === 'CONCLUIDO') updated.checkOutAt = now;
-      if (payload.status === 'VALOR_LIBERADO') updated.releasedAt = now;
+      if (payload.status === 'CHECKIN_REALIZADO') {
+        if (payload.callerRole === 'FREELANCER') {
+          if (!payload.pin || payload.pin.trim() !== updated.checkInPin) {
+            throw new Error(
+              `Bloqueio Antifraude: PIN de entrada incorreto. Solicite o PIN de 4 dígitos ao gerente do restaurante (${updated.companyName}) ao chegar no local.`
+            );
+          }
+        }
+        updated.status = 'CHECKIN_REALIZADO';
+        updated.checkInAt = payload.checkInAt || now;
+        updated.shiftComplianceStatus = 'EM_ANDAMENTO';
+      } else if (payload.status === 'CONCLUIDO') {
+        if (!updated.checkInAt) {
+          throw new Error('Bloqueio Antifraude: Não é possível realizar check-out sem check-in validado previamente.');
+        }
+
+        const elapsedMinutes = payload.simulatedElapsedMinutes !== undefined
+          ? payload.simulatedElapsedMinutes
+          : Math.max(0, Math.floor((new Date(now).getTime() - new Date(updated.checkInAt).getTime()) / (1000 * 60)));
+        const minMinutes = updated.minShiftDurationMinutes || 360;
+
+        if (payload.callerRole === 'FREELANCER') {
+          const isPinValid = payload.pin && payload.pin.trim() === updated.checkOutPin;
+          const isEarly = elapsedMinutes < minMinutes;
+
+          if (isEarly && (!isPinValid || !payload.earlyExitReason)) {
+            const remainingMins = minMinutes - elapsedMinutes;
+            const remH = Math.floor(remainingMins / 60);
+            const remM = remainingMins % 60;
+            const formattedRemaining = remH > 0 ? `${remH}h ${remM}min` : `${remM}min`;
+            throw new Error(
+              `Bloqueio Antifraude: Tentativa de saída antecipada detectada (${elapsedMinutes}min de ${minMinutes}min contratados. Faltam ${formattedRemaining}). O encerramento prematuro exige o PIN de liberação do gerente (${updated.checkOutPin}) e uma justificativa.`
+            );
+          }
+
+          if (!isEarly && !isPinValid && !payload.managerApprovedOut) {
+            throw new Error(
+              `Bloqueio Antifraude: Insira o PIN de saída de 4 dígitos fornecido pelo gerente do restaurante (${updated.companyName}) para formalizar o encerramento do posto de trabalho.`
+            );
+          }
+        }
+
+        updated.status = 'CONCLUIDO';
+        updated.checkOutAt = now;
+        updated.workedMinutes = elapsedMinutes;
+        updated.earlyExitReason = payload.earlyExitReason;
+        updated.managerApprovedOut = !!(payload.managerApprovedOut || (payload.pin && payload.pin.trim() === updated.checkOutPin));
+        updated.shiftComplianceStatus = elapsedMinutes >= minMinutes ? 'CONCLUIDO_NO_HORARIO' : 'SAIDA_ANTECIPADA_AUTORIZADA';
+      } else if (payload.status === 'VALOR_LIBERADO') {
+        if (payload.callerRole === 'FREELANCER') {
+          throw new Error(
+            'Fraude interceptada: O freelancer não possui autorização para liberar fundos de custódia unilateralmente. A liberação do Pix é efetuada pelo restaurante contratante após inspecionar o turno.'
+          );
+        }
+        updated.status = 'VALOR_LIBERADO';
+        updated.releasedAt = now;
+      } else {
+        updated.status = payload.status;
+      }
     }
 
     if (payload.review) {

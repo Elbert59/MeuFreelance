@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Contract } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { RatingModal } from './RatingModal';
 import { ContractChatModal } from './ContractChatModal';
+import { CheckInModal } from './CheckInModal';
+import { CheckOutModal } from './CheckOutModal';
+import { calculateShiftCompliance } from '../utils/security';
 import {
   MapPin,
   Clock,
   ShieldCheck,
+  ShieldAlert,
   CheckCircle2,
   Calendar,
   AlertCircle,
@@ -18,6 +22,10 @@ import {
   Check,
   MessageSquare,
   Flame,
+  FastForward,
+  RotateCcw,
+  Sparkles,
+  Lock,
 } from 'lucide-react';
 
 interface FreelancerDashboardProps {
@@ -36,6 +44,17 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [selectedContractForRating, setSelectedContractForRating] = useState<Contract | null>(null);
   const [chatContract, setChatContract] = useState<Contract | null>(null);
+  const [checkInModalContract, setCheckInModalContract] = useState<Contract | null>(null);
+  const [checkOutModalContract, setCheckOutModalContract] = useState<Contract | null>(null);
+  const [ticker, setTicker] = useState(0);
+
+  // Update ticker every second for real-time shift countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTicker((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Find the freelancer profile
   const currentFreelancer =
@@ -52,50 +71,68 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
     freelancerContracts.find((c) => c.status === 'PAGO_E_RETIDO') ||
     freelancerContracts[0];
 
+  // Compliance metrics for active shift
+  const activeShiftMinMinutes = activeShift?.minShiftDurationMinutes || 360;
+  const activeShiftCompliance = calculateShiftCompliance(
+    activeShift?.checkInAt,
+    activeShiftMinMinutes
+  );
+
   // Totals
   const totalEarned = freelancerContracts
-    .filter((c) => c.status === 'VALOR_LIBERADO' || c.status === 'CONCLUIDO')
+    .filter((c) => c.status === 'VALOR_LIBERADO')
     .reduce((acc, curr) => acc + curr.dailyRate, 0);
 
   const pendingEscrow = freelancerContracts
-    .filter((c) => c.status === 'PAGO_E_RETIDO' || c.status === 'CHECKIN_REALIZADO')
+    .filter((c) => c.status === 'PAGO_E_RETIDO' || c.status === 'CHECKIN_REALIZADO' || c.status === 'CONCLUIDO')
     .reduce((acc, curr) => acc + curr.dailyRate, 0);
 
-  const handleCheckIn = async (contract: Contract) => {
-    setLoadingAction(`checkin-${contract.id}`);
+  // Testing helpers to simulate shift time progression
+  const handleFastForward = async (contract: Contract, hoursToAdd: number) => {
+    setLoadingAction(`ff-${contract.id}`);
     try {
+      const currentCheckIn = new Date(contract.checkInAt || Date.now()).getTime();
+      const newCheckIn = new Date(currentCheckIn - hoursToAdd * 60 * 60 * 1000).toISOString();
       const updated = await api.updateContract({
         contractId: contract.id,
-        status: 'CHECKIN_REALIZADO',
+        checkInAt: newCheckIn,
       });
       onContractUpdated(updated);
-    } catch (err) {
-      console.error('Check-in error', err);
+    } catch (e) {
+      console.error('Fast-forward error', e);
     } finally {
       setLoadingAction(null);
     }
   };
 
-  const handleCheckOut = async (contract: Contract) => {
-    setLoadingAction(`checkout-${contract.id}`);
+  const handleCompleteHours = async (contract: Contract) => {
+    setLoadingAction(`complete-${contract.id}`);
     try {
-      const completed = await api.updateContract({
+      const minMinutes = contract.minShiftDurationMinutes || 360;
+      const newCheckIn = new Date(Date.now() - (minMinutes + 5) * 60 * 1000).toISOString();
+      const updated = await api.updateContract({
         contractId: contract.id,
-        status: 'CONCLUIDO',
+        checkInAt: newCheckIn,
       });
+      onContractUpdated(updated);
+    } catch (e) {
+      console.error('Complete hours error', e);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
 
-      setTimeout(async () => {
-        const released = await api.updateContract({
-          contractId: contract.id,
-          status: 'VALOR_LIBERADO',
-        });
-        onContractUpdated(released);
-        setSelectedContractForRating(released);
-      }, 500);
-
-      onContractUpdated(completed);
-    } catch (err) {
-      console.error('Check-out error', err);
+  const handleResetCheckIn = async (contract: Contract) => {
+    setLoadingAction(`reset-${contract.id}`);
+    try {
+      const newCheckIn = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const updated = await api.updateContract({
+        contractId: contract.id,
+        checkInAt: newCheckIn,
+      });
+      onContractUpdated(updated);
+    } catch (e) {
+      console.error('Reset checkin error', e);
     } finally {
       setLoadingAction(null);
     }
@@ -223,21 +260,28 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
                 {activeShift.status === 'PAGO_E_RETIDO' && (
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-50 border border-amber-300 px-3 py-1 rounded-full">
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-                    PAGO_E_RETIDO (Escrow Garantido)
+                    PAGO_E_RETIDO (Escrow Garantido · Aguardando Check-in)
                   </span>
                 )}
 
                 {activeShift.status === 'CHECKIN_REALIZADO' && (
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-900 bg-sky-50 border border-sky-300 px-3 py-1 rounded-full">
                     <Clock className="w-3.5 h-3.5 text-sky-600 animate-spin" />
-                    CHECKIN_REALIZADO (Expediente em Andamento)
+                    CHECKIN_REALIZADO (Expediente em Andamento · Antifraude Ativo)
                   </span>
                 )}
 
-                {(activeShift.status === 'CONCLUIDO' || activeShift.status === 'VALOR_LIBERADO') && (
+                {activeShift.status === 'CONCLUIDO' && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-900 bg-indigo-50 border border-indigo-300 px-3 py-1 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                    CONCLUIDO (Jornada Cumprida · Aguardando Inspeção da Empresa)
+                  </span>
+                )}
+
+                {activeShift.status === 'VALOR_LIBERADO' && (
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-900 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-full">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    VALOR_LIBERADO (Pagamento Disponível)
+                    VALOR_LIBERADO (Pagamento Pix Liquidado)
                   </span>
                 )}
               </div>
@@ -263,7 +307,7 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
 
                   <button
                     onClick={() => setChatContract(activeShift)}
-                    className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition-colors flex items-center gap-1.5 shrink-0"
+                    className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
                   >
                     <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
                     <span>Chat Turno</span>
@@ -323,70 +367,242 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
               </div>
             </div>
 
-            {/* ACTION BUTTON SECTION */}
+            {/* ACTION BUTTON & ANTIFRAUD ENGINE SECTION */}
             <div className="pt-4 border-t border-neutral-100">
               {activeShift.status === 'PAGO_E_RETIDO' && (
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <button
-                    onClick={() => handleCheckIn(activeShift)}
-                    disabled={loadingAction === `checkin-${activeShift.id}`}
-                    className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-neutral-950 font-extrabold text-base transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 group cursor-pointer"
-                  >
-                    {loadingAction === `checkin-${activeShift.id}` ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Validando presença e geolocalização...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-5 h-5" />
-                        <span>Fazer Check-in (Iniciar Expediente)</span>
-                        <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[11px] text-neutral-500 text-center sm:text-left sm:max-w-xs">
-                    Ao fazer o check-in, o restaurante é notificado e o cronômetro do seu turno começa a rodar.
-                  </p>
-                </div>
-              )}
-
-              {activeShift.status === 'CHECKIN_REALIZADO' && (
                 <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-between text-xs text-sky-900">
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <Clock className="w-4 h-4 text-sky-600 animate-pulse" />
-                      Check-in realizado às {new Date(activeShift.checkInAt || Date.now()).toLocaleTimeString()}!
+                  <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>
+                        <strong>Presença física obrigatória:</strong> O check-in exige o PIN de 4 dígitos fornecido pelo gerente no local.
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-mono text-amber-800 bg-white px-2 py-0.5 rounded border border-amber-300 shrink-0">
+                      PIN do Turno: {activeShift.checkInPin || '8412'}
                     </span>
-                    <span className="font-mono text-sky-950 font-bold">Expediente em Curso</span>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-3">
                     <button
-                      onClick={() => handleCheckOut(activeShift)}
-                      disabled={loadingAction === `checkout-${activeShift.id}`}
-                      className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-base transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                      onClick={() => setCheckInModalContract(activeShift)}
+                      disabled={loadingAction === `checkin-${activeShift.id}`}
+                      className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-neutral-950 font-extrabold text-base transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 group cursor-pointer"
                     >
-                      {loadingAction === `checkout-${activeShift.id}` ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>Finalizando turno e liberando pagamento...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-5 h-5 stroke-[3]" />
-                          <span>Fazer Check-out (Finalizar Expediente)</span>
-                        </>
-                      )}
+                      <Clock className="w-5 h-5" />
+                      <span>Fazer Check-in Presencial (Validar Presença)</span>
+                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                     <p className="text-[11px] text-neutral-500 text-center sm:text-left sm:max-w-xs">
-                      O check-out finaliza o contrato e <strong>libera imediatamente os R$ {activeShift.dailyRate.toFixed(2)}</strong> retidos no cofre.
+                      Validação GPS + PIN do estabelecimento. O cronômetro oficial do turno inicia após a confirmação.
                     </p>
                   </div>
                 </div>
               )}
 
-              {(activeShift.status === 'CONCLUIDO' || activeShift.status === 'VALOR_LIBERADO') && (
+              {activeShift.status === 'CHECKIN_REALIZADO' && (
+                <div className="space-y-4">
+                  {/* Real-time Antifraud Shift Progress Tracker */}
+                  <div className="p-4 rounded-2xl bg-neutral-900 text-white shadow-inner space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-neutral-300 font-mono">
+                          Monitor de Cumprimento de Horário (Antifraude Ativo)
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-xs font-mono">
+                        <span className="text-neutral-400">Início:</span>
+                        <span className="text-amber-400 font-bold">
+                          {new Date(activeShift.checkInAt || Date.now()).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-baseline text-xs">
+                        <span className="text-neutral-300 flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-amber-400" />
+                          Tempo Trabalhado:
+                          <strong className="text-white font-mono text-sm ml-1">
+                            {activeShiftCompliance.formattedElapsed}
+                          </strong>
+                        </span>
+                        <span className="font-mono text-neutral-300">
+                          Meta: <strong>{Math.floor(activeShiftMinMinutes / 60)}h {activeShiftMinMinutes % 60 > 0 ? `${activeShiftMinMinutes % 60}min` : ''}</strong>
+                        </span>
+                      </div>
+
+                      <div className="w-full h-3 bg-neutral-800 rounded-full overflow-hidden p-0.5 border border-neutral-700">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            activeShiftCompliance.isCompleted
+                              ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                              : 'bg-gradient-to-r from-amber-500 via-sky-500 to-emerald-500'
+                          }`}
+                          style={{ width: `${activeShiftCompliance.progressPercent}%` }}
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center text-[11px] font-mono">
+                        <span className="text-neutral-400">
+                          {activeShiftCompliance.progressPercent}% do turno concluído
+                        </span>
+                        {!activeShiftCompliance.isCompleted ? (
+                          <span className="text-rose-400 font-bold flex items-center gap-1">
+                            <ShieldAlert className="w-3 h-3 text-rose-400" />
+                            Faltam {activeShiftCompliance.remainingMinutes} min para o término
+                          </span>
+                        ) : (
+                          <span className="text-emerald-400 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            Jornada Integral Cumprida!
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Antifraud status notification badge */}
+                    <div
+                      className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
+                        activeShiftCompliance.isCompleted
+                          ? 'bg-emerald-950/60 border-emerald-600/60 text-emerald-200'
+                          : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {activeShiftCompliance.isCompleted ? (
+                          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                        ) : (
+                          <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+                        )}
+                        <span className="text-[11px]">
+                          {activeShiftCompliance.isCompleted
+                            ? 'Jornada integral realizada com sucesso. Solicite o PIN de saída ao gerente para encerramento.'
+                            : 'Bloqueio Antifraude Ativo: Saída antecipada requer PIN de autorização de emergência do gerente.'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold bg-neutral-900 px-2 py-0.5 rounded border border-neutral-700 shrink-0">
+                        PIN Saída: {activeShift.checkOutPin || '5930'}
+                      </span>
+                    </div>
+
+                    {/* Testing Fast-Forward Simulator Toolbar (Acelerador de Horário para Teste da Fraude) */}
+                    <div className="pt-2 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="text-[11px] text-neutral-400 flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        Simulador de Horário de Teste:
+                      </span>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleFastForward(activeShift, 1)}
+                          disabled={loadingAction === `ff-${activeShift.id}`}
+                          className="px-2 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold text-neutral-200 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Avançar 1 hora no relógio"
+                        >
+                          <FastForward className="w-3 h-3 text-amber-400" />
+                          <span>+1 Hora</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleFastForward(activeShift, 3)}
+                          disabled={loadingAction === `ff-${activeShift.id}`}
+                          className="px-2 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold text-neutral-200 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Avançar 3 horas no relógio"
+                        >
+                          <FastForward className="w-3 h-3 text-amber-400" />
+                          <span>+3 Horas</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCompleteHours(activeShift)}
+                          disabled={loadingAction === `complete-${activeShift.id}`}
+                          className="px-2.5 py-1 rounded-md bg-emerald-800 hover:bg-emerald-700 text-[10px] font-black text-white transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Completar todo o expediente para testar check-out regular"
+                        >
+                          <Check className="w-3 h-3 text-emerald-300 stroke-[3]" />
+                          <span>Completar Horário (100%)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleResetCheckIn(activeShift)}
+                          disabled={loadingAction === `reset-${activeShift.id}`}
+                          className="px-2 py-1 rounded-md bg-rose-900/60 hover:bg-rose-900 text-[10px] font-bold text-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Voltar o relógio para 5 minutos para testar a tentativa de saída antecipada"
+                        >
+                          <RotateCcw className="w-3 h-3 text-rose-400" />
+                          <span>Resetar (5min)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Check-out Action Button */}
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <button
+                      onClick={() => setCheckOutModalContract(activeShift)}
+                      disabled={loadingAction === `checkout-${activeShift.id}`}
+                      className={`w-full sm:flex-1 py-4 px-6 rounded-xl font-extrabold text-base transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                        activeShiftCompliance.isCompleted
+                          ? 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-emerald-600/20'
+                          : 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white shadow-rose-600/20'
+                      }`}
+                    >
+                      {activeShiftCompliance.isCompleted ? (
+                        <>
+                          <Check className="w-5 h-5 stroke-[3]" />
+                          <span>Fazer Check-out (Jornada Concluída)</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldAlert className="w-5 h-5 text-white" />
+                          <span>Fazer Check-out (Alerta: Horário Incompleto)</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="text-[11px] text-neutral-500 text-center sm:text-left sm:max-w-xs">
+                      {activeShiftCompliance.isCompleted
+                        ? 'Encerramento regular com PIN de saída. O restaurante inspeciona o posto e libera o Pix garantido.'
+                        : 'Sair antes do horário exige o PIN de liberação de emergência do gerente e justificativa auditável.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {activeShift.status === 'CONCLUIDO' && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-sky-50 border border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-sky-950">
+                          Expediente Concluído com Sucesso! (Status: {activeShift.shiftComplianceStatus || 'CONCLUIDO_NO_HORARIO'})
+                        </h4>
+                        <p className="text-xs text-sky-800 mt-0.5">
+                          O restaurante <strong>{activeShift.companyName}</strong> foi notificado para validar o término do turno e autorizar a liberação dos <strong>R$ {activeShift.dailyRate.toFixed(2)}</strong> retidos no cofre Escrow.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-sky-900 bg-white px-3 py-1.5 rounded-lg border border-sky-300">
+                        Cofre Garantido: R$ {activeShift.dailyRate.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeShift.status === 'VALOR_LIBERADO' && (
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -395,17 +611,17 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-emerald-950">
-                          Expediente Concluído & Valor de R$ {activeShift.dailyRate.toFixed(2)} Liberado!
+                          Valor de R$ {activeShift.dailyRate.toFixed(2)} Liberado via Pix!
                         </h4>
-                        <p className="text-xs text-emerald-800">
-                          O valor retido no cofre da plataforma já foi repassado com sucesso para sua chave Pix cadastrada.
+                        <p className="text-xs text-emerald-800 mt-0.5">
+                          O valor garantido em custódia foi repassado com sucesso para sua chave Pix cadastrada após a aprovação do contratante.
                         </p>
                       </div>
                     </div>
 
                     <button
                       onClick={() => setSelectedContractForRating(activeShift)}
-                      className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors shrink-0 flex items-center gap-1.5 shadow-xs"
+                      className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors shrink-0 flex items-center gap-1.5 shadow-xs cursor-pointer"
                     >
                       <Star className="w-3.5 h-3.5 fill-neutral-950" />
                       <span>{activeShift.freelancerReview ? 'Ver Avaliação Enviada' : 'Avaliar o Restaurante'}</span>
@@ -498,6 +714,32 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
           onSubmitted={(updated) => {
             onContractUpdated(updated);
             setSelectedContractForRating(null);
+          }}
+        />
+      )}
+
+      {/* Check-In Modal with PIN and Geofencing */}
+      {checkInModalContract && (
+        <CheckInModal
+          isOpen={!!checkInModalContract}
+          contract={checkInModalContract}
+          onClose={() => setCheckInModalContract(null)}
+          onSuccess={(updated) => {
+            onContractUpdated(updated);
+            setCheckInModalContract(null);
+          }}
+        />
+      )}
+
+      {/* Check-Out Modal with Shift Compliance & Anti-fraud */}
+      {checkOutModalContract && (
+        <CheckOutModal
+          isOpen={!!checkOutModalContract}
+          contract={checkOutModalContract}
+          onClose={() => setCheckOutModalContract(null)}
+          onSuccess={(updated) => {
+            onContractUpdated(updated);
+            setCheckOutModalContract(null);
           }}
         />
       )}

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Contract, ContractStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 import { RatingModal } from './RatingModal';
 import { ContractChatModal } from './ContractChatModal';
 import {
   ShieldCheck,
+  ShieldAlert,
   Clock,
   CheckCircle2,
   Calendar,
@@ -14,6 +16,10 @@ import {
   Lock,
   ArrowRight,
   MessageSquare,
+  KeyRound,
+  Sparkles,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface EscrowContractsViewProps {
@@ -33,11 +39,66 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
   const [selectedForReview, setSelectedForReview] = useState<Contract | null>(null);
   const [chatContract, setChatContract] = useState<Contract | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
 
   const filteredContracts = contracts.filter((c) => {
     if (filterStatus === 'all') return true;
     return c.status === filterStatus;
   });
+
+  const handleManagerCheckIn = async (contract: Contract) => {
+    setLoadingAction(`checkin-${contract.id}`);
+    setActionError(null);
+    try {
+      const updated = await api.updateContract({
+        contractId: contract.id,
+        status: 'CHECKIN_REALIZADO',
+        callerRole: 'EMPRESA',
+      });
+      onContractUpdated(updated);
+    } catch (err: any) {
+      setActionError({ id: contract.id, message: err?.message || 'Erro ao validar presença do freelancer' });
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleManagerCheckOut = async (contract: Contract) => {
+    setLoadingAction(`checkout-${contract.id}`);
+    setActionError(null);
+    try {
+      const updated = await api.updateContract({
+        contractId: contract.id,
+        status: 'CONCLUIDO',
+        managerApprovedOut: true,
+        callerRole: 'EMPRESA',
+      });
+      onContractUpdated(updated);
+    } catch (err: any) {
+      setActionError({ id: contract.id, message: err?.message || 'Erro ao encerrar turno' });
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleManagerReleaseFunds = async (contract: Contract) => {
+    setLoadingAction(`release-${contract.id}`);
+    setActionError(null);
+    try {
+      const updated = await api.updateContract({
+        contractId: contract.id,
+        status: 'VALOR_LIBERADO',
+        callerRole: 'EMPRESA',
+      });
+      onContractUpdated(updated);
+      setSelectedForReview(updated);
+    } catch (err: any) {
+      setActionError({ id: contract.id, message: err?.message || 'Erro ao liberar pagamento' });
+    } finally {
+      setLoadingAction(null);
+    }
+  };
 
   const getStatusBadge = (status: ContractStatus) => {
     switch (status) {
@@ -360,6 +421,124 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                 </div>
               )}
 
+              {/* Action Error if any */}
+              {actionError && actionError.id === contract.id && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{actionError.message}</span>
+                </div>
+              )}
+
+              {/* Manager Anti-Fraud & Shift Controls for Empresa */}
+              {session.role === 'EMPRESA' && (
+                <div className="pt-2 border-t border-neutral-100">
+                  {contract.status === 'PAGO_E_RETIDO' && (
+                    <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                          <KeyRound className="w-4 h-4 text-amber-700" />
+                          <span>PIN de Entrada do Restaurante (Check-in Presencial):</span>
+                          <span className="font-mono text-base font-black text-amber-900 bg-white px-2 py-0.5 rounded border border-amber-300">
+                            {contract.checkInPin || '8412'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-800">
+                          Informe este código de 4 dígitos ao profissional na sua apresentação física à cozinha/balcão.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleManagerCheckIn(contract)}
+                        disabled={loadingAction === `checkin-${contract.id}`}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors shrink-0 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {loadingAction === `checkin-${contract.id}` ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Validando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Confirmar Presença no Local</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {contract.status === 'CHECKIN_REALIZADO' && (
+                    <div className="p-3.5 rounded-xl bg-sky-50/80 border border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-sky-950">
+                          <KeyRound className="w-4 h-4 text-sky-700" />
+                          <span>PIN de Saída / Liberação do Gerente:</span>
+                          <span className="font-mono text-base font-black text-sky-900 bg-white px-2 py-0.5 rounded border border-sky-300">
+                            {contract.checkOutPin || '5930'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-sky-800">
+                          Expediente em andamento desde às {new Date(contract.checkInAt || Date.now()).toLocaleTimeString()}. Forneça o PIN de saída ao término do turno ou para autorizar dispensa antecipada.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleManagerCheckOut(contract)}
+                        disabled={loadingAction === `checkout-${contract.id}`}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-colors shrink-0 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {loadingAction === `checkout-${contract.id}` ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Encerrando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Encerrar Expediente como Gerente</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {contract.status === 'CONCLUIDO' && (
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 font-black text-emerald-950 text-sm">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span>Turno Concluído pelo Freelancer ({contract.shiftComplianceStatus || 'CONCLUIDO_NO_HORARIO'})</span>
+                        </div>
+                        <p className="text-[11px] text-emerald-800">
+                          {contract.workedMinutes ? `${contract.workedMinutes} minutos trabalhados.` : 'Horário cumprido.'} Inspecione a entrega do posto de trabalho e autorize o repasse do Pix garantido.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleManagerReleaseFunds(contract)}
+                        disabled={loadingAction === `release-${contract.id}`}
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-xs transition-all shadow-md shadow-emerald-600/20 shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {loadingAction === `release-${contract.id}` ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Transferindo Pix...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 text-amber-300" />
+                            <span>Inspecionar & Liberar Pix (R$ {contract.dailyRate.toFixed(2)})</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex items-center justify-between pt-2">
                 <div className="text-[11px] text-neutral-400">
@@ -369,37 +548,30 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setChatContract(contract)}
-                    className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 hover:text-neutral-900 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
+                    className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 hover:text-neutral-900 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
                     <span>Alinhar no Chat</span>
                   </button>
 
-                  {contract.status === 'VALOR_LIBERADO' && !contract.companyReview && (
+                  {contract.status === 'VALOR_LIBERADO' && !contract.companyReview && session.role === 'EMPRESA' && (
                     <button
                       onClick={() => setSelectedForReview(contract)}
-                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1 shadow-xs"
+                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
                     >
                       <Star className="w-3.5 h-3.5 fill-neutral-950" />
                       <span>Avaliar Profissional (Uber)</span>
                     </button>
                   )}
 
-                  {contract.status === 'PAGO_E_RETIDO' && (
-                    session.role === 'FREELANCER' ? (
-                      <button
-                        onClick={() => onSelectTab('freelancer')}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center gap-1 shadow-xs"
-                      >
-                        <span>Fazer Check-in no Meu Painel</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
-                      <span className="text-xs text-amber-800 bg-amber-100/80 border border-amber-300 px-2.5 py-1 rounded-lg font-medium flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-amber-600" />
-                        <span>Aguardando Check-in do Profissional</span>
-                      </span>
-                    )
+                  {contract.status === 'PAGO_E_RETIDO' && session.role === 'FREELANCER' && (
+                    <button
+                      onClick={() => onSelectTab('freelancer')}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <span>Fazer Check-in no Meu Painel</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
               </div>

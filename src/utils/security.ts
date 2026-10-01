@@ -122,3 +122,95 @@ export function generateEscrowAuditHash(contractId: string, amount: number, time
   const secondHex = Math.abs(hash ^ 0x5a5a5a5a).toString(16).toUpperCase().padStart(8, '0');
   return `ESCROW-${hex.slice(0, 4)}-${secondHex.slice(0, 4)}-${hex.slice(4, 8)}`;
 }
+
+/**
+ * Parsers e cálculos antifraude de jornada de trabalho (Shift Compliance)
+ */
+export function parseShiftHours(shiftHours: string): {
+  startTime: string;
+  endTime: string;
+  totalDurationMinutes: number;
+  formattedDuration: string;
+} {
+  const parts = shiftHours.split('-').map((s) => s.trim());
+  const start = parts[0] || '18:00';
+  const end = parts[1] || '00:00';
+
+  const [startH, startM] = start.split(':').map((v) => parseInt(v, 10) || 0);
+  const [endH, endM] = end.split(':').map((v) => parseInt(v, 10) || 0);
+
+  let startTotalM = startH * 60 + startM;
+  let endTotalM = endH * 60 + endM;
+
+  // Se o término for menor ou igual ao início, atravessou a meia-noite (ex: 18:00 até 00:00 ou 02:00)
+  if (endTotalM <= startTotalM) {
+    endTotalM += 24 * 60;
+  }
+
+  const diffMinutes = Math.max(endTotalM - startTotalM, 60);
+  const hours = Math.floor(diffMinutes / 60);
+  const mins = diffMinutes % 60;
+
+  return {
+    startTime: start,
+    endTime: end,
+    totalDurationMinutes: diffMinutes,
+    formattedDuration: mins > 0 ? `${hours}h ${mins}min` : `${hours}h`,
+  };
+}
+
+/**
+ * Gera PINs numéricos de 4 dígitos para validação presencial mútua (Restaurante + Freelancer)
+ */
+export function generateShiftPin(seed: string, offset = 0): string {
+  let hash = 0;
+  const str = `CHEFMATCH_PIN_${seed}_${offset}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const pinNum = Math.abs(hash % 9000) + 1000;
+  return pinNum.toString();
+}
+
+/**
+ * Calcula o progresso real do expediente e valida se houve cumprimento do horário
+ */
+export function calculateShiftCompliance(
+  checkInAt?: string,
+  minDurationMinutes = 360
+): {
+  elapsedMinutes: number;
+  remainingMinutes: number;
+  progressPercent: number;
+  isCompleted: boolean;
+  formattedElapsed: string;
+} {
+  if (!checkInAt) {
+    return {
+      elapsedMinutes: 0,
+      remainingMinutes: minDurationMinutes,
+      progressPercent: 0,
+      isCompleted: false,
+      formattedElapsed: '00h 00min',
+    };
+  }
+
+  const checkInTime = new Date(checkInAt).getTime();
+  const now = Date.now();
+  const elapsedMinutes = Math.max(0, Math.floor((now - checkInTime) / (1000 * 60)));
+  const remainingMinutes = Math.max(0, minDurationMinutes - elapsedMinutes);
+  const progressPercent = Math.min(100, Math.round((elapsedMinutes / minDurationMinutes) * 100));
+
+  const h = Math.floor(elapsedMinutes / 60);
+  const m = elapsedMinutes % 60;
+  const formattedElapsed = `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}min`;
+
+  return {
+    elapsedMinutes,
+    remainingMinutes,
+    progressPercent,
+    isCompleted: elapsedMinutes >= minDurationMinutes,
+    formattedElapsed,
+  };
+}

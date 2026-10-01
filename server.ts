@@ -29,6 +29,9 @@ import {
   validateCPF,
   isAllowedStatusTransition,
   generateEscrowAuditHash,
+  parseShiftHours,
+  generateShiftPin,
+  calculateShiftCompliance,
 } from './src/utils/security.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -252,6 +255,10 @@ class Database {
 
     const escrowHash = generateEscrowAuditHash(contractId, totalAmount, now);
 
+    const parsedHours = parseShiftHours(payload.shiftHours);
+    const checkInPin = generateShiftPin(contractId, 1);
+    const checkOutPin = generateShiftPin(contractId, 2);
+
     const newContract: Contract = {
       id: contractId,
       freelancerId: freela.id,
@@ -273,11 +280,15 @@ class Database {
       paidAt: now,
       notes: payload.notes ? sanitizeInput(payload.notes, 500) : undefined,
       escrowHash,
+      checkInPin,
+      checkOutPin,
+      minShiftDurationMinutes: parsedHours.totalDurationMinutes,
+      shiftComplianceStatus: 'PENDENTE',
       auditTrail: [
         {
           timestamp: now,
           action: 'ESCROW_DEPOSITADO',
-          details: `Valor total de R$ ${totalAmount.toFixed(2)} retido em custódia. Hash: ${escrowHash}`,
+          details: `Valor total de R$ ${totalAmount.toFixed(2)} retido em custódia. PINs antifraude gerados para o restaurante. Hash: ${escrowHash}`,
         },
       ],
     };
@@ -289,7 +300,7 @@ class Database {
       contractId: newContract.id,
       senderRole: 'EMPRESA',
       senderName: 'Cofre Escrow ChefMatch',
-      content: `[Garantia B2B] Contrato autenticado. R$ ${totalAmount.toFixed(2)} retido em cofre seguro. Hash de custódia: ${escrowHash}. Te aguardamos às ${payload.shiftHours.split(' ')[0]}!`,
+      content: `[Garantia B2B & Antifraude] Contrato firmado. Horário contratado: ${payload.shiftHours} (${parsedHours.formattedDuration}). PIN de entrada do restaurante: ${checkInPin}. Hash: ${escrowHash}.`,
     });
 
     return newContract;
@@ -299,6 +310,12 @@ class Database {
     id: string,
     updates: {
       status?: ContractStatus;
+      pin?: string;
+      earlyExitReason?: string;
+      managerApprovedOut?: boolean;
+      callerRole?: 'EMPRESA' | 'FREELANCER';
+      checkInAt?: string;
+      simulatedElapsedMinutes?: number;
       review?: {
         type: 'company' | 'freelancer';
         data: ContractReview;
@@ -313,6 +330,11 @@ class Database {
     const now = new Date().toISOString();
     if (!contract.auditTrail) contract.auditTrail = [];
 
+    // Allow updating checkInAt timestamp (e.g. for time simulator testing)
+    if (updates.checkInAt) {
+      contract.checkInAt = updates.checkInAt;
+    }
+
     // State machine validation
     if (updates.status) {
       if (!isAllowedStatusTransition(contract.status, updates.status)) {
@@ -321,36 +343,102 @@ class Database {
         );
       }
 
-      contract.status = updates.status;
-
+      // ==========================================
+      // REGRA ANTIFRAUDE 1: VALIDAÇÃO DE CHECK-IN
+      // ==========================================
       if (updates.status === 'CHECKIN_REALIZADO') {
-        contract.checkInAt = now;
+        // Se chamado pelo freelancer, é obrigatório validar o PIN fornecido pelo restaurante presencialmente
+        if (updates.callerRole === 'FREELANCER') {
+          if (!updates.pin || updates.pin.trim() !== contract.checkInPin) {
+            throw new Error(
+              `Bloqueio Antifraude: PIN de entrada incorreto. Solicite o PIN de 4 dígitos ao gerente do restaurante (${contract.companyName}) ao chegar no local para confirmar seu início de turno.`
+            );
+          }
+        }
+
+        contract.status = 'CHECKIN_REALIZADO';
+        contract.checkInAt = updates.checkInAt || now;
+        contract.shiftComplianceStatus = 'EM_ANDAMENTO';
         contract.auditTrail.push({
           timestamp: now,
-          action: 'CHECKIN_VALIDADO',
-          details: 'Expediente iniciado com geolocalização e horário confirmados.',
+          action: 'CHECKIN_PRESENCIAL_VALIDADO',
+          details: updates.callerRole === 'EMPRESA'
+            ? 'Presença no local confirmada diretamente pelo gerente da empresa.'
+            : `Presença presencial autenticada com PIN do gerente (${updates.pin}).`,
         });
       }
 
-      if (updates.status === 'CONCLUIDO') {
+      // ==========================================
+      // REGRA ANTIFRAUDE 2: CUMPRIMENTO DO EXPEDIENTE (CHECK-OUT)
+      // ==========================================
+      else if (updates.status === 'CONCLUIDO') {
+        if (!contract.checkInAt) {
+          throw new Error('Bloqueio Antifraude: Não é possível realizar check-out sem check-in validado previamente.');
+        }
+
+        const elapsedMinutes = updates.simulatedElapsedMinutes !== undefined
+          ? updates.simulatedElapsedMinutes
+          : Math.max(0, Math.floor((new Date(now).getTime() - new Date(contract.checkInAt).getTime()) / (1000 * 60)));
+        const minMinutes = contract.minShiftDurationMinutes || 360;
+
+        // Se a solicitação vier do Freelancer:
+        if (updates.callerRole === 'FREELANCER') {
+          const isPinValid = updates.pin && updates.pin.trim() === contract.checkOutPin;
+          const isEarly = elapsedMinutes < minMinutes;
+
+          if (isEarly && (!isPinValid || !updates.earlyExitReason)) {
+            const remainingMins = minMinutes - elapsedMinutes;
+            const remH = Math.floor(remainingMins / 60);
+            const remM = remainingMins % 60;
+            const formattedRemaining = remH > 0 ? `${remH}h ${remM}min` : `${remM}min`;
+            throw new Error(
+              `Bloqueio Antifraude: Tentativa de saída antecipada detectada (${elapsedMinutes}min trabalhados de ${minMinutes}min contratados. Faltam ${formattedRemaining}). O encerramento prematuro exige o PIN de liberação do gerente (${contract.checkOutPin}) e uma justificativa obrigatória.`
+            );
+          }
+
+          // Se cumprido no horário integral, exige validação do PIN de saída do restaurante
+          if (!isEarly && !isPinValid && !updates.managerApprovedOut) {
+            throw new Error(
+              `Bloqueio Antifraude: Insira o PIN de saída de 4 dígitos fornecido pelo gerente do restaurante (${contract.companyName}) para formalizar o encerramento do posto de trabalho.`
+            );
+          }
+        }
+
+        contract.status = 'CONCLUIDO';
         contract.checkOutAt = now;
+        contract.workedMinutes = elapsedMinutes;
+        contract.earlyExitReason = updates.earlyExitReason ? sanitizeInput(updates.earlyExitReason, 200) : undefined;
+        contract.managerApprovedOut = !!(updates.managerApprovedOut || (updates.pin && updates.pin.trim() === contract.checkOutPin));
+        contract.shiftComplianceStatus = elapsedMinutes >= minMinutes ? 'CONCLUIDO_NO_HORARIO' : 'SAIDA_ANTECIPADA_AUTORIZADA';
+
         contract.auditTrail.push({
           timestamp: now,
           action: 'CHECKOUT_VALIDADO',
-          details: 'Expediente finalizado pelo profissional. Aguardando liberação do Pix.',
+          details: `Expediente encerrado. Minutos trabalhados: ${elapsedMinutes}min de ${minMinutes}min. Status: ${contract.shiftComplianceStatus}.`,
         });
       }
 
-      if (updates.status === 'VALOR_LIBERADO') {
-        // Idempotency: ensure funds are not double-released
+      // ==========================================
+      // REGRA ANTIFRAUDE 3: LIQUIDAÇÃO DE PAGAMENTO (ESCROW PAYOUT)
+      // ==========================================
+      else if (updates.status === 'VALOR_LIBERADO') {
+        // Bloqueio rigoroso: O freelancer JAMAIS pode liberar o próprio pagamento unilateralmente
+        if (updates.callerRole === 'FREELANCER') {
+          throw new Error(
+            'Fraude interceptada: O freelancer não possui autorização para liberar fundos de custódia unilateralmente. A liberação do Pix é efetuada pelo restaurante contratante após inspecionar o turno.'
+          );
+        }
+
         if (contract.releasedAt) {
           throw new Error('O pagamento deste contrato já foi liquidado anteriormente.');
         }
+
+        contract.status = 'VALOR_LIBERADO';
         contract.releasedAt = now;
         contract.auditTrail.push({
           timestamp: now,
           action: 'PIX_LIQUIDADO',
-          details: `Valor líquido de R$ ${contract.dailyRate.toFixed(2)} transferido via Pix garantido.`,
+          details: `Valor líquido de R$ ${contract.dailyRate.toFixed(2)} transferido via Pix garantido após validação do turno pelo contratante.`,
         });
 
         // Increment completed gigs for freelancer
@@ -358,6 +446,8 @@ class Database {
         if (freela) {
           freela.completedGigs = (freela.completedGigs || 0) + 1;
         }
+      } else {
+        contract.status = updates.status;
       }
     }
 
@@ -728,8 +818,17 @@ async function startServer() {
   app.patch('/api/contracts/:id', (req: Request, res: Response) => {
     try {
       const id = sanitizeInput(req.params.id, 50);
-      const { status, review } = req.body;
-      const updated = db.updateContract(id, { status, review });
+      const { status, pin, earlyExitReason, managerApprovedOut, callerRole, checkInAt, simulatedElapsedMinutes, review } = req.body;
+      const updated = db.updateContract(id, {
+        status,
+        pin: pin ? sanitizeInput(pin, 10) : undefined,
+        earlyExitReason: earlyExitReason ? sanitizeInput(earlyExitReason, 200) : undefined,
+        managerApprovedOut: Boolean(managerApprovedOut),
+        callerRole,
+        checkInAt: checkInAt ? sanitizeInput(checkInAt, 50) : undefined,
+        simulatedElapsedMinutes: typeof simulatedElapsedMinutes === 'number' ? simulatedElapsedMinutes : undefined,
+        review,
+      });
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ error: e.message || 'Erro ao atualizar contrato' });
