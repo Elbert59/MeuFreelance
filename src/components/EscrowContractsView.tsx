@@ -20,12 +20,14 @@ interface EscrowContractsViewProps {
   contracts: Contract[];
   onContractUpdated: (updated: Contract) => void;
   onSelectTab: (tab: any) => void;
+  onOpenSecurityModal?: () => void;
 }
 
 export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
   contracts,
   onContractUpdated,
   onSelectTab,
+  onOpenSecurityModal,
 }) => {
   const { session } = useAuth();
   const [selectedForReview, setSelectedForReview] = useState<Contract | null>(null);
@@ -106,12 +108,24 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={() => onSelectTab('empresa')}
-          className="px-4 py-2 text-xs font-bold text-neutral-950 bg-amber-500 hover:bg-amber-400 rounded-lg whitespace-nowrap transition-colors shadow-xs"
-        >
-          + Contratar Nova Diária
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {onOpenSecurityModal && (
+            <button
+              onClick={onOpenSecurityModal}
+              className="px-3 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg whitespace-nowrap transition-colors shadow-xs flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Ver Pilares de Segurança</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => onSelectTab('empresa')}
+            className="px-4 py-2 text-xs font-bold text-neutral-950 bg-amber-500 hover:bg-amber-400 rounded-lg whitespace-nowrap transition-colors shadow-xs"
+          >
+            + Contratar Nova Diária
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -264,6 +278,23 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                     <span className="text-neutral-700">Total Depositado no Cofre:</span>
                     <span className="font-mono text-amber-700">R$ {contract.totalAmount.toFixed(2)}</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Escrow Cryptographic Audit Receipt */}
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50/50 border border-emerald-200 text-xs">
+                <div className="flex items-center gap-1.5 text-emerald-900 font-semibold text-[11px]">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Custódia Blindada ChefMatch</span>
+                  <span className="text-neutral-400">·</span>
+                  <span className="text-neutral-500 font-normal">Liberação condicionada a check-in e check-out presenciais</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 font-mono text-[10px] text-neutral-600">
+                  <span className="text-neutral-400">Hash de Custódia:</span>
+                  <span className="bg-white px-2 py-0.5 rounded-md border border-emerald-300 text-emerald-900 font-bold tracking-wider select-all shadow-2xs">
+                    {contract.escrowHash || `ESCROW-${contract.id.slice(4)}`}
+                  </span>
                 </div>
               </div>
 

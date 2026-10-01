@@ -13,6 +13,7 @@ import { OpportunitiesBoard } from './components/OpportunitiesBoard';
 import { LoginModal } from './components/LoginModal';
 import { RegisterCompanyModal } from './components/RegisterCompanyModal';
 import { RegisterFreelancerModal } from './components/RegisterFreelancerModal';
+import { SecurityGuaranteeModal } from './components/SecurityGuaranteeModal';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import {
@@ -43,6 +44,7 @@ function AppContent() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterCompanyOpen, setIsRegisterCompanyOpen] = useState(false);
   const [isRegisterFreelancerOpen, setIsRegisterFreelancerOpen] = useState(false);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -192,6 +194,7 @@ function AppContent() {
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onOpenRegisterCompany={() => setIsRegisterCompanyOpen(true)}
         onOpenRegisterFreelancer={() => setIsRegisterFreelancerOpen(true)}
+        onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
         pendingEscrowTotal={pendingEscrowTotal}
       />
 
@@ -368,11 +371,12 @@ function AppContent() {
 
         {/* VIEW 4: CONTRATOS & ESCROW (Cofre da Plataforma) */}
         {currentTab === 'contratos' && (
-          <EscrowContractsView
-            contracts={contracts}
-            onContractUpdated={handleContractUpdated}
-            onSelectTab={setCurrentTab}
-          />
+           <EscrowContractsView
+             contracts={contracts}
+             onContractUpdated={handleContractUpdated}
+             onSelectTab={setCurrentTab}
+             onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+           />
         )}
       </main>
 
@@ -388,6 +392,14 @@ function AppContent() {
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsSecurityModalOpen(true)}
+              className="text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Garantia & Segurança B2B</span>
+            </button>
+            <span>·</span>
             <button
               onClick={() => setIsRegisterCompanyOpen(true)}
               className="hover:text-amber-700 transition-colors"
@@ -450,6 +462,12 @@ function AppContent() {
         isOpen={isRegisterFreelancerOpen}
         onClose={() => setIsRegisterFreelancerOpen(false)}
         onSuccess={handleFreelancerRegistered}
+      />
+
+      {/* Security Guarantee & Escrow Compliance Modal */}
+      <SecurityGuaranteeModal
+        isOpen={isSecurityModalOpen}
+        onClose={() => setIsSecurityModalOpen(false)}
       />
 
       {/* Connectivity & Offline Status */}

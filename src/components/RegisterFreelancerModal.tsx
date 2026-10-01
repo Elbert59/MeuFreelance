@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CategoryId } from '../types';
 import { User, X, Check, ShieldCheck, Sparkles, Wrench, AlertCircle, Loader2 } from 'lucide-react';
+import { validateCPF, validateCNPJ } from '../utils/security';
 
 interface RegisterFreelancerModalProps {
   isOpen: boolean;
@@ -83,6 +84,12 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
     e.preventDefault();
     if (!name.trim() || !identifier.trim() || !role.trim() || !pixKey.trim()) {
       setError('Por favor, preencha os campos obrigatórios (incluindo Chave Pix para recebimento).');
+      return;
+    }
+
+    const isValidDoc = validateCPF(identifier) || validateCNPJ(identifier);
+    if (!isValidDoc) {
+      setError('CPF ou CNPJ/MEI inválido. Digite um documento oficial válido para credenciamento.');
       return;
     }
 
@@ -176,15 +183,41 @@ export const RegisterFreelancerModal: React.FC<RegisterFreelancerModalProps> = (
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                CPF ou MEI *
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-neutral-700">
+                  CPF ou MEI *
+                </label>
+                {identifier.trim() && (
+                  <span
+                    className={`text-[10px] font-semibold flex items-center gap-1 ${
+                      validateCPF(identifier) || validateCNPJ(identifier)
+                        ? 'text-emerald-700'
+                        : 'text-amber-700'
+                    }`}
+                  >
+                    {validateCPF(identifier) || validateCNPJ(identifier) ? (
+                      <>
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        Documento Válido
+                      </>
+                    ) : (
+                      'Documento inválido'
+                    )}
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="000.000.000-00 ou MEI"
-                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-emerald-500 font-mono"
+                placeholder="000.000.000-00 ou CNPJ MEI"
+                className={`w-full text-xs rounded-lg border px-3 py-2 text-neutral-900 focus:outline-none font-mono ${
+                  identifier && !(validateCPF(identifier) || validateCNPJ(identifier))
+                    ? 'border-amber-300 bg-amber-50/30 focus:border-amber-500'
+                    : identifier && (validateCPF(identifier) || validateCNPJ(identifier))
+                    ? 'border-emerald-300 bg-emerald-50/20 focus:border-emerald-500'
+                    : 'border-neutral-300 bg-white focus:border-emerald-500'
+                }`}
                 required
               />
             </div>

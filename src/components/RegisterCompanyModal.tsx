@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Building2, X, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Building2, X, Check, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
+import { validateCNPJ } from '../utils/security';
 
 interface RegisterCompanyModalProps {
   isOpen: boolean;
@@ -32,6 +33,11 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
     e.preventDefault();
     if (!name.trim() || !cnpj.trim() || !email.trim()) {
       setError('Preencha os campos obrigatórios.');
+      return;
+    }
+
+    if (!validateCNPJ(cnpj)) {
+      setError('O CNPJ informado possui dígitos verificadores inválidos na Receita Federal.');
       return;
     }
 
@@ -140,15 +146,39 @@ export const RegisterCompanyModal: React.FC<RegisterCompanyModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                CNPJ da Empresa *
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-neutral-700">
+                  CNPJ da Empresa *
+                </label>
+                {cnpj.trim() && (
+                  <span
+                    className={`text-[10px] font-semibold flex items-center gap-1 ${
+                      validateCNPJ(cnpj) ? 'text-emerald-700' : 'text-amber-700'
+                    }`}
+                  >
+                    {validateCNPJ(cnpj) ? (
+                      <>
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        CNPJ Verificado
+                      </>
+                    ) : (
+                      'Dígito verificador inválido'
+                    )}
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 value={cnpj}
                 onChange={(e) => setCnpj(e.target.value)}
-                placeholder="00.000.000/0001-00"
-                className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:border-amber-500 font-mono"
+                placeholder="18.492.302/0001-44"
+                className={`w-full text-xs rounded-lg border px-3 py-2 text-neutral-900 focus:outline-none font-mono ${
+                  cnpj && !validateCNPJ(cnpj)
+                    ? 'border-amber-300 bg-amber-50/30 focus:border-amber-500'
+                    : cnpj && validateCNPJ(cnpj)
+                    ? 'border-emerald-300 bg-emerald-50/20 focus:border-emerald-500'
+                    : 'border-neutral-300 bg-white focus:border-amber-500'
+                }`}
                 required
               />
             </div>

@@ -82,6 +82,8 @@ export interface Contract {
   freelancerReview?: ContractReview;
   companyReview?: ContractReview;
   notes?: string;
+  escrowHash?: string; // Hash criptográfico de custódia antifraude (SHA-256)
+  auditTrail?: Array<{ timestamp: string; action: string; details?: string }>;
 }
 
 export interface UserSession {

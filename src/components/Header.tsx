@@ -18,6 +18,7 @@ interface HeaderProps {
   onOpenLogin: () => void;
   onOpenRegisterCompany: () => void;
   onOpenRegisterFreelancer: () => void;
+  onOpenSecurityModal: () => void;
   pendingEscrowTotal: number;
 }
 
@@ -27,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLogin,
   onOpenRegisterCompany,
   onOpenRegisterFreelancer,
+  onOpenSecurityModal,
   pendingEscrowTotal,
 }) => {
   const { session, switchRole } = useAuth();
@@ -49,10 +51,18 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-lg font-bold tracking-tight text-neutral-900 font-sans">
                   ChefMatch <span className="text-amber-600 font-extrabold text-sm tracking-wider">B2B</span>
                 </span>
-                <span className="hidden xl:inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                  Cofre Escrow Ativo
-                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenSecurityModal();
+                  }}
+                  title="Conheça a Central de Segurança & Garantia Escrow"
+                  className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full transition-colors cursor-pointer shadow-xs"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Cofre Escrow Blindado</span>
+                </button>
               </div>
               <p className="text-[11px] text-neutral-500 hidden sm:block">Gastronomia & Eventos · Maringá</p>
             </div>
