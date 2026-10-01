@@ -5,11 +5,8 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
-  // Support GitHub Pages subpath deployment automatically (e.g. /<repo-name>/)
-  // when building via GitHub Actions, or fallback to relative './' or custom env
-  const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
-  const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
-  const base = process.env.VITE_BASE || (isGitHubActions && repoName ? `/${repoName}/` : './');
+  // Fixamos o caminho base para garantir que o GitHub Pages encontra os ficheiros
+  const base = '/MeuFreelance/';
 
   return {
     base,
@@ -65,6 +62,8 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          // Instrução CRUCIAL para o PWA funcionar no GitHub Pages sem ficar em branco
+          navigateFallback: `${base}index.html`,
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -104,7 +103,8 @@ export default defineConfig(() => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(process.cwd(), '.'),
+        // Utilizamos __dirname por ser mais estável na compilação do Vite
+        '@': path.resolve(__dirname, '.'),
       },
     },
     build: {
@@ -112,7 +112,6 @@ export default defineConfig(() => {
       emptyOutDir: true,
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
