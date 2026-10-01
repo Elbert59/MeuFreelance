@@ -18,37 +18,38 @@ import {
 } from '../data/mockData';
 
 const STORAGE_KEYS = {
-  CONTRACTS: 'chefmatch_contracts_v2',
-  FREELANCERS: 'chefmatch_freelancers_v2',
-  COMPANIES: 'chefmatch_companies_v2',
-  OPPORTUNITIES: 'chefmatch_opportunities_v2',
-  MESSAGES: 'chefmatch_messages_v2',
+  CONTRACTS: 'chefmatch_contracts_v3',
+  FREELANCERS: 'chefmatch_freelancers_v3',
+  COMPANIES: 'chefmatch_companies_v3',
+  OPPORTUNITIES: 'chefmatch_opportunities_v3',
+  MESSAGES: 'chefmatch_messages_v3',
 };
 
-// Safe storage loaders
-function loadStorage<T>(key: string, fallback: T): T {
+// Local storage caching for offline PWA support
+function loadCache<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (raw) return JSON.parse(raw);
   } catch (e) {
-    console.error(`Failed to load ${key}`, e);
+    console.warn(`[Cache] Failed to load ${key}`, e);
   }
   return fallback;
 }
 
-function saveStorage<T>(key: string, data: T) {
+function saveCache<T>(key: string, data: T) {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (e) {
-    console.error(`Failed to save ${key}`, e);
+    console.warn(`[Cache] Failed to save ${key}`, e);
   }
 }
 
-let contractsStore: Contract[] = loadStorage(STORAGE_KEYS.CONTRACTS, [...INITIAL_CONTRACTS]);
-let freelancersStore: Freelancer[] = loadStorage(STORAGE_KEYS.FREELANCERS, [...FREELANCERS]);
-let companiesStore: UserSession[] = loadStorage(STORAGE_KEYS.COMPANIES, [...MOCK_COMPANIES]);
-let opportunitiesStore: ShiftOpportunity[] = loadStorage(STORAGE_KEYS.OPPORTUNITIES, [...INITIAL_OPPORTUNITIES]);
-let messagesStore: ChatMessage[] = loadStorage(STORAGE_KEYS.MESSAGES, [...INITIAL_CHAT_MESSAGES]);
+// In-memory local stores for offline / fallback
+let cachedContracts: Contract[] = loadCache(STORAGE_KEYS.CONTRACTS, [...INITIAL_CONTRACTS]);
+let cachedFreelancers: Freelancer[] = loadCache(STORAGE_KEYS.FREELANCERS, [...FREELANCERS]);
+let cachedCompanies: UserSession[] = loadCache(STORAGE_KEYS.COMPANIES, [...MOCK_COMPANIES]);
+let cachedOpportunities: ShiftOpportunity[] = loadCache(STORAGE_KEYS.OPPORTUNITIES, [...INITIAL_OPPORTUNITIES]);
+let cachedMessages: ChatMessage[] = loadCache(STORAGE_KEYS.MESSAGES, [...INITIAL_CHAT_MESSAGES]);
 
 export interface CreateContractPayload {
   freelancerId: string;
@@ -102,48 +103,78 @@ export interface RegisterFreelancerPayload {
   pixKey: string;
 }
 
+export interface PlatformStats {
+  totalEscrowLocked: number;
+  activeShifts: number;
+  completedShifts: number;
+  openOpportunities: number;
+  totalFreelancers: number;
+  totalCompanies: number;
+  totalContracts: number;
+}
+
 export const api = {
   /**
    * GET /api/freelancers
    */
-  async getFreelancers(params?: { categoryId?: CategoryId; search?: string }): Promise<Freelancer[]> {
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    let list = [...freelancersStore];
+  async getFreelancers(params?: { categoryId?: CategoryId | 'all'; search?: string; location?: string }): Promise<Freelancer[]> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.categoryId && params.categoryId !== 'all') query.set('category', params.categoryId);
+      if (params?.search) query.set('search', params.search);
+      if (params?.location && params.location !== 'all') query.set('location', params.location);
 
-    if (params?.categoryId) {
-      list = list.filter((f) => f.categoryId === params.categoryId);
+      const res = await fetch(`/api/freelancers?${query.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        cachedFreelancers = data;
+        saveCache(STORAGE_KEYS.FREELANCERS, data);
+        return data;
+      }
+    } catch (e) {
+      console.warn('[API] Using cached freelancers data', e);
     }
 
+    // Fallback to cache if network fails
+    let list = [...cachedFreelancers];
+    if (params?.categoryId && params.categoryId !== 'all') {
+      list = list.filter((f) => f.categoryId === params.categoryId);
+    }
     if (params?.search) {
       const q = params.search.toLowerCase();
       list = list.filter(
         (f) =>
           f.name.toLowerCase().includes(q) ||
           f.role.toLowerCase().includes(q) ||
-          f.specialty.toLowerCase().includes(q) ||
-          f.skills.some((s) => s.toLowerCase().includes(q))
+          f.specialty.toLowerCase().includes(q)
       );
     }
-
     return list;
   },
 
   /**
-   * POST /api/freelancers (Cadastro de Novo Freelancer)
+   * POST /api/freelancers
    */
   async registerFreelancer(payload: RegisterFreelancerPayload): Promise<Freelancer> {
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    try {
+      const res = await fetch('/api/freelancers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    const colorVariants = [
-      'bg-rose-900 text-rose-200',
-      'bg-amber-900 text-amber-200',
-      'bg-violet-900 text-violet-200',
-      'bg-orange-900 text-orange-200',
-      'bg-emerald-900 text-emerald-200',
-    ];
-    const randomColor = colorVariants[Math.floor(Math.random() * colorVariants.length)];
+      if (res.ok) {
+        const newFreela: Freelancer = await res.json();
+        cachedFreelancers = [newFreela, ...cachedFreelancers];
+        saveCache(STORAGE_KEYS.FREELANCERS, cachedFreelancers);
+        return newFreela;
+      }
+    } catch (e) {
+      console.warn('[API] Network error registering freelancer, using fallback', e);
+    }
 
-    const newFreelancer: Freelancer = {
+    // Fallback creation
+    const fallbackFreela: Freelancer = {
       id: `freela-${Date.now()}`,
       name: payload.name,
       role: payload.role,
@@ -158,7 +189,7 @@ export const api = {
       experienceYears: payload.experienceYears,
       verified: true,
       avatarUrl: '',
-      avatarFallbackColor: randomColor,
+      avatarFallbackColor: 'bg-amber-900 text-amber-200',
       skills: payload.skills,
       gear: payload.gear,
       certifications: payload.certifications,
@@ -166,128 +197,173 @@ export const api = {
       availableDays: payload.availableDays,
       immediateAvailable: true,
     };
-
-    freelancersStore = [newFreelancer, ...freelancersStore];
-    saveStorage(STORAGE_KEYS.FREELANCERS, freelancersStore);
-
-    return newFreelancer;
+    cachedFreelancers = [fallbackFreela, ...cachedFreelancers];
+    saveCache(STORAGE_KEYS.FREELANCERS, cachedFreelancers);
+    return fallbackFreela;
   },
 
   /**
    * GET /api/companies
    */
   async getCompanies(): Promise<UserSession[]> {
-    return [...companiesStore];
+    try {
+      const res = await fetch('/api/companies');
+      if (res.ok) {
+        const data = await res.json();
+        cachedCompanies = data;
+        saveCache(STORAGE_KEYS.COMPANIES, data);
+        return data;
+      }
+    } catch (e) {
+      console.warn('[API] Using cached companies data', e);
+    }
+    return [...cachedCompanies];
   },
 
   /**
-   * POST /api/companies (Cadastro de Nova Empresa CNPJ)
+   * POST /api/companies
    */
   async registerCompany(payload: RegisterCompanyPayload): Promise<UserSession> {
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    try {
+      const res = await fetch('/api/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    const newCompany: UserSession = {
+      if (res.ok) {
+        const newComp: UserSession = await res.json();
+        cachedCompanies = [newComp, ...cachedCompanies];
+        saveCache(STORAGE_KEYS.COMPANIES, cachedCompanies);
+        return newComp;
+      }
+    } catch (e) {
+      console.warn('[API] Network error registering company, using fallback', e);
+    }
+
+    const fallbackComp: UserSession = {
       role: 'EMPRESA',
       id: `comp-${Date.now()}`,
       name: payload.name,
       identifier: payload.cnpj,
       avatar: payload.avatarIcon || '🍽️',
       location: payload.location,
-      walletBalance: payload.initialDeposit || 3500,
+      walletBalance: payload.initialDeposit || 4500,
       email: payload.email,
       phone: payload.phone,
     };
-
-    companiesStore = [newCompany, ...companiesStore];
-    saveStorage(STORAGE_KEYS.COMPANIES, companiesStore);
-
-    return newCompany;
+    cachedCompanies = [fallbackComp, ...cachedCompanies];
+    saveCache(STORAGE_KEYS.COMPANIES, cachedCompanies);
+    return fallbackComp;
   },
 
   /**
    * GET /api/contracts
    */
-  async getContracts(params?: { companyId?: string; freelancerId?: string }): Promise<Contract[]> {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    let list = [...contractsStore];
+  async getContracts(params?: { companyId?: string; freelancerId?: string; status?: string }): Promise<Contract[]> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.companyId) query.set('companyId', params.companyId);
+      if (params?.freelancerId) query.set('freelancerId', params.freelancerId);
+      if (params?.status && params.status !== 'all') query.set('status', params.status);
 
-    if (params?.companyId) {
-      list = list.filter((c) => c.companyId === params.companyId);
-    } else if (params?.freelancerId) {
-      list = list.filter((c) => c.freelancerId === params.freelancerId);
+      const res = await fetch(`/api/contracts?${query.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        cachedContracts = data;
+        saveCache(STORAGE_KEYS.CONTRACTS, data);
+        return data;
+      }
+    } catch (e) {
+      console.warn('[API] Using cached contracts data', e);
     }
 
-    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    let list = [...cachedContracts];
+    if (params?.companyId) list = list.filter((c) => c.companyId === params.companyId);
+    if (params?.freelancerId) list = list.filter((c) => c.freelancerId === params.freelancerId);
+    if (params?.status && params.status !== 'all') list = list.filter((c) => c.status === params.status);
+    return list;
   },
 
   /**
-   * POST /api/contracts (Criação com Depósito em Escrow)
+   * POST /api/contracts (Criar Contrato com Retenção no Cofre Escrow)
    */
   async createContract(payload: CreateContractPayload): Promise<Contract> {
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    try {
+      const res = await fetch('/api/contracts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    const freelancer = freelancersStore.find((f) => f.id === payload.freelancerId);
-    if (!freelancer) {
-      throw new Error('Profissional não encontrado');
+      if (res.ok) {
+        const contract: Contract = await res.json();
+        cachedContracts = [contract, ...cachedContracts];
+        saveCache(STORAGE_KEYS.CONTRACTS, cachedContracts);
+        return contract;
+      }
+    } catch (e) {
+      console.warn('[API] Network error creating contract, using fallback', e);
     }
 
+    // Local fallback
+    const freela = cachedFreelancers.find((f) => f.id === payload.freelancerId);
     const escrowFee = Math.round(payload.dailyRate * 0.08);
-    const totalAmount = payload.dailyRate + escrowFee;
     const now = new Date().toISOString();
 
-    const newContract: Contract = {
+    const fallbackContract: Contract = {
       id: `CTR-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
-      freelancerId: freelancer.id,
-      freelancerName: freelancer.name,
-      freelancerRole: freelancer.role,
-      freelancerAvatar: freelancer.avatarUrl,
+      freelancerId: payload.freelancerId,
+      freelancerName: freela?.name || 'Profissional',
+      freelancerRole: freela?.role || 'Cozinheiro',
+      freelancerAvatar: freela?.avatarUrl || '',
       companyId: payload.companyId,
       companyName: payload.companyName,
       companyCnpj: payload.companyCnpj,
-      categoryId: freelancer.categoryId,
+      categoryId: freela?.categoryId || 'cozinha-quente',
       date: payload.date,
       shiftHours: payload.shiftHours,
       venueAddress: payload.venueAddress,
       dailyRate: payload.dailyRate,
       escrowFee,
-      totalAmount,
+      totalAmount: payload.dailyRate + escrowFee,
       status: 'PAGO_E_RETIDO',
       createdAt: now,
       paidAt: now,
       notes: payload.notes,
     };
 
-    contractsStore = [newContract, ...contractsStore];
-    saveStorage(STORAGE_KEYS.CONTRACTS, contractsStore);
-
-    // Initial message in chat
-    const initialMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      contractId: newContract.id,
-      senderRole: 'EMPRESA',
-      senderName: payload.companyName,
-      content: `Olá ${freelancer.name}! Contrato firmado com diária de R$ ${payload.dailyRate} retida em cofre Escrow. Te aguardamos às ${payload.shiftHours.split(' ')[0]}!`,
-      timestamp: now,
-    };
-    messagesStore = [...messagesStore, initialMsg];
-    saveStorage(STORAGE_KEYS.MESSAGES, messagesStore);
-
-    return newContract;
+    cachedContracts = [fallbackContract, ...cachedContracts];
+    saveCache(STORAGE_KEYS.CONTRACTS, cachedContracts);
+    return fallbackContract;
   },
 
   /**
-   * PATCH /api/contracts
+   * PATCH /api/contracts/:id
    */
   async updateContract(payload: UpdateContractPayload): Promise<Contract> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    try {
+      const res = await fetch(`/api/contracts/${payload.contractId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: payload.status, review: payload.review }),
+      });
 
-    const index = contractsStore.findIndex((c) => c.id === payload.contractId);
-    if (index === -1) {
-      throw new Error('Contrato não encontrado');
+      if (res.ok) {
+        const updated: Contract = await res.json();
+        cachedContracts = cachedContracts.map((c) => (c.id === updated.id ? updated : c));
+        saveCache(STORAGE_KEYS.CONTRACTS, cachedContracts);
+        return updated;
+      }
+    } catch (e) {
+      console.warn('[API] Network error updating contract, using fallback', e);
     }
 
-    const current = contractsStore[index];
-    const updated = { ...current };
+    // Fallback update
+    const index = cachedContracts.findIndex((c) => c.id === payload.contractId);
+    if (index === -1) throw new Error('Contrato não encontrado');
+
+    const updated = { ...cachedContracts[index] };
     const now = new Date().toISOString();
 
     if (payload.status) {
@@ -305,91 +381,184 @@ export const api = {
       }
     }
 
-    contractsStore[index] = updated;
-    saveStorage(STORAGE_KEYS.CONTRACTS, contractsStore);
-
+    cachedContracts[index] = updated;
+    saveCache(STORAGE_KEYS.CONTRACTS, cachedContracts);
     return updated;
   },
 
   /**
-   * GET /api/opportunities (Mural de Diárias Urgentes)
+   * GET /api/opportunities
    */
   async getOpportunities(): Promise<ShiftOpportunity[]> {
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    return [...opportunitiesStore];
+    try {
+      const res = await fetch('/api/opportunities');
+      if (res.ok) {
+        const data = await res.json();
+        cachedOpportunities = data;
+        saveCache(STORAGE_KEYS.OPPORTUNITIES, data);
+        return data;
+      }
+    } catch (e) {
+      console.warn('[API] Using cached opportunities data', e);
+    }
+    return [...cachedOpportunities];
   },
 
   /**
-   * POST /api/opportunities (Publicar Nova Diária Urgente)
+   * POST /api/opportunities
    */
   async createOpportunity(opp: Omit<ShiftOpportunity, 'id' | 'createdAt' | 'status' | 'slotsRemaining'>): Promise<ShiftOpportunity> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const newOpp: ShiftOpportunity = {
+    try {
+      const res = await fetch('/api/opportunities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(opp),
+      });
+
+      if (res.ok) {
+        const newOpp: ShiftOpportunity = await res.json();
+        cachedOpportunities = [newOpp, ...cachedOpportunities];
+        saveCache(STORAGE_KEYS.OPPORTUNITIES, cachedOpportunities);
+        return newOpp;
+      }
+    } catch (e) {
+      console.warn('[API] Network error creating opportunity, using fallback', e);
+    }
+
+    const fallbackOpp: ShiftOpportunity = {
       ...opp,
       id: `OPP-${Math.floor(100 + Math.random() * 900)}`,
       createdAt: new Date().toISOString(),
       slotsRemaining: opp.slotsTotal,
       status: 'ABERTA',
     };
-    opportunitiesStore = [newOpp, ...opportunitiesStore];
-    saveStorage(STORAGE_KEYS.OPPORTUNITIES, opportunitiesStore);
-    return newOpp;
+    cachedOpportunities = [fallbackOpp, ...cachedOpportunities];
+    saveCache(STORAGE_KEYS.OPPORTUNITIES, cachedOpportunities);
+    return fallbackOpp;
   },
 
   /**
-   * Freelancer aceita oportunidade -> gera contrato automático em Escrow
+   * POST /api/opportunities/:id/apply
    */
   async applyToOpportunity(opportunityId: string, freelancer: Freelancer): Promise<Contract> {
-    const opp = opportunitiesStore.find((o) => o.id === opportunityId);
-    if (!opp) throw new Error('Oportunidade não encontrada');
+    try {
+      const res = await fetch(`/api/opportunities/${opportunityId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ freelancerId: freelancer.id }),
+      });
 
-    // Create contract
-    const contract = await this.createContract({
+      if (res.ok) {
+        const contract: Contract = await res.json();
+        cachedContracts = [contract, ...cachedContracts];
+        saveCache(STORAGE_KEYS.CONTRACTS, cachedContracts);
+        return contract;
+      }
+    } catch (e) {
+      console.warn('[API] Network error applying to opportunity, using fallback', e);
+    }
+
+    // Local fallback
+    return await this.createContract({
       freelancerId: freelancer.id,
-      companyId: opp.companyId,
-      companyName: opp.companyName,
-      companyCnpj: opp.companyCnpj,
-      date: opp.date,
-      shiftHours: opp.shiftHours,
-      venueAddress: opp.venueAddress,
-      dailyRate: opp.dailyRate,
-      notes: `Vaga originada do Mural de Diárias: ${opp.roleTitle}`,
+      companyId: 'comp-1',
+      companyName: 'Restaurante',
+      companyCnpj: '00.000.000/0001-00',
+      date: 'Hoje',
+      shiftHours: 'Turno Noturno',
+      venueAddress: 'Maringá, PR',
+      dailyRate: 300,
+      notes: 'Vaga originada do Mural de Diárias',
     });
-
-    opp.slotsRemaining = Math.max(0, opp.slotsRemaining - 1);
-    if (opp.slotsRemaining === 0) opp.status = 'PREENCHIDA';
-    saveStorage(STORAGE_KEYS.OPPORTUNITIES, opportunitiesStore);
-
-    return contract;
   },
 
   /**
-   * Chat messages for contract
+   * GET /api/contracts/:id/messages
    */
   async getChatMessages(contractId: string): Promise<ChatMessage[]> {
-    return messagesStore.filter((m) => m.contractId === contractId);
+    try {
+      const res = await fetch(`/api/contracts/${contractId}/messages`);
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      }
+    } catch (e) {
+      console.warn('[API] Using cached messages', e);
+    }
+    return cachedMessages.filter((m) => m.contractId === contractId);
   },
 
+  /**
+   * POST /api/contracts/:id/messages
+   */
   async sendChatMessage(msg: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<ChatMessage> {
-    const newMsg: ChatMessage = {
+    try {
+      const res = await fetch(`/api/contracts/${msg.contractId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(msg),
+      });
+
+      if (res.ok) {
+        const newMsg: ChatMessage = await res.json();
+        cachedMessages = [...cachedMessages, newMsg];
+        saveCache(STORAGE_KEYS.MESSAGES, cachedMessages);
+        return newMsg;
+      }
+    } catch (e) {
+      console.warn('[API] Network error sending chat message, using fallback', e);
+    }
+
+    const fallbackMsg: ChatMessage = {
       ...msg,
       id: `msg-${Date.now()}`,
       timestamp: new Date().toISOString(),
     };
-    messagesStore = [...messagesStore, newMsg];
-    saveStorage(STORAGE_KEYS.MESSAGES, messagesStore);
-    return newMsg;
+    cachedMessages = [...cachedMessages, fallbackMsg];
+    saveCache(STORAGE_KEYS.MESSAGES, cachedMessages);
+    return fallbackMsg;
   },
 
   /**
-   * Reset store helper
+   * GET /api/stats
+   */
+  async getStats(): Promise<PlatformStats> {
+    try {
+      const res = await fetch('/api/stats');
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('[API] Using local stats calculation', e);
+    }
+
+    return {
+      totalEscrowLocked: cachedContracts
+        .filter((c) => c.status === 'PAGO_E_RETIDO')
+        .reduce((acc, c) => acc + c.totalAmount, 0),
+      activeShifts: cachedContracts.filter((c) => c.status === 'CHECKIN_REALIZADO').length,
+      completedShifts: cachedContracts.filter((c) => c.status === 'VALOR_LIBERADO' || c.status === 'CONCLUIDO').length,
+      openOpportunities: cachedOpportunities.filter((o) => o.status === 'ABERTA').length,
+      totalFreelancers: cachedFreelancers.length,
+      totalCompanies: cachedCompanies.length,
+      totalContracts: cachedContracts.length,
+    };
+  },
+
+  /**
+   * POST /api/reset
    */
   async resetAll(): Promise<void> {
+    try {
+      await fetch('/api/reset', { method: 'POST' });
+    } catch (e) {
+      console.warn('[API] Resetting local cache', e);
+    }
     localStorage.clear();
-    contractsStore = [...INITIAL_CONTRACTS];
-    freelancersStore = [...FREELANCERS];
-    companiesStore = [...MOCK_COMPANIES];
-    opportunitiesStore = [...INITIAL_OPPORTUNITIES];
-    messagesStore = [...INITIAL_CHAT_MESSAGES];
+    cachedContracts = [...INITIAL_CONTRACTS];
+    cachedFreelancers = [...FREELANCERS];
+    cachedCompanies = [...MOCK_COMPANIES];
+    cachedOpportunities = [...INITIAL_OPPORTUNITIES];
+    cachedMessages = [...INITIAL_CHAT_MESSAGES];
   },
 };
