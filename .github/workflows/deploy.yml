@@ -1,4 +1,3 @@
-# Fluxo de trabalho para publicar um site Vite no GitHub Pages
 name: Deploy to GitHub Pages
 
 on:
@@ -28,7 +27,7 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
       - name: Build
         run: npm run build
       - name: Setup Pages
