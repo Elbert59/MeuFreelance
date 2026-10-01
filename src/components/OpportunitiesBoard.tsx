@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShiftOpportunity, Freelancer, Contract } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { ServiceContractModal } from './ServiceContractModal';
 import {
   Flame,
   Clock,
@@ -12,6 +13,7 @@ import {
   X,
   CheckCircle,
   Loader2,
+  FileText,
 } from 'lucide-react';
 
 interface OpportunitiesBoardProps {
@@ -28,6 +30,10 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
   const { session, role, availableFreelancers } = useAuth();
   const [isPostingModalOpen, setIsPostingModalOpen] = useState(false);
   const [loadingOppId, setLoadingOppId] = useState<string | null>(null);
+  const [contractToSignOpp, setContractToSignOpp] = useState<ShiftOpportunity | null>(null);
+
+  const currentFreelancer =
+    availableFreelancers.find((f) => f.id === session.id) || availableFreelancers[0];
 
   // New Opp Form State
   const [roleTitle, setRoleTitle] = useState('Sushiman para Cobertura de Folga');
@@ -207,16 +213,16 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
               {opp.status === 'ABERTA' ? (
                 role === 'FREELANCER' ? (
                   <button
-                    onClick={() => handleAcceptShift(opp)}
+                    onClick={() => setContractToSignOpp(opp)}
                     disabled={loadingOppId === opp.id}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-xs"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     {loadingOppId === opp.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <CheckCircle className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <FileText className="w-3.5 h-3.5" />
                     )}
-                    <span>Aceitar Diária</span>
+                    <span>Aceitar Diária & Assinar Termos</span>
                   </button>
                 ) : (
                   <span className="text-[11px] text-neutral-500 italic">
@@ -361,6 +367,20 @@ export const OpportunitiesBoard: React.FC<OpportunitiesBoardProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Mandatory Contract and Terms Agreement Modal */}
+      {contractToSignOpp && (
+        <ServiceContractModal
+          isOpen={!!contractToSignOpp}
+          opportunity={contractToSignOpp}
+          freelancer={currentFreelancer}
+          onClose={() => setContractToSignOpp(null)}
+          onConfirmAccept={async () => {
+            await handleAcceptShift(contractToSignOpp);
+            setContractToSignOpp(null);
+          }}
+        />
       )}
     </section>
   );

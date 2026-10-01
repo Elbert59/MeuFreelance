@@ -6,6 +6,7 @@ import { RatingModal } from './RatingModal';
 import { ContractChatModal } from './ContractChatModal';
 import { CheckInModal } from './CheckInModal';
 import { CheckOutModal } from './CheckOutModal';
+import { ServiceContractModal } from './ServiceContractModal';
 import { calculateShiftCompliance } from '../utils/security';
 import {
   MapPin,
@@ -26,6 +27,7 @@ import {
   RotateCcw,
   Sparkles,
   Lock,
+  FileText,
 } from 'lucide-react';
 
 interface FreelancerDashboardProps {
@@ -46,6 +48,7 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
   const [chatContract, setChatContract] = useState<Contract | null>(null);
   const [checkInModalContract, setCheckInModalContract] = useState<Contract | null>(null);
   const [checkOutModalContract, setCheckOutModalContract] = useState<Contract | null>(null);
+  const [viewingContractDoc, setViewingContractDoc] = useState<Contract | null>(null);
   const [ticker, setTicker] = useState(0);
 
   // Update ticker every second for real-time shift countdown
@@ -305,13 +308,24 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setChatContract(activeShift)}
-                    className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Chat Turno</span>
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setViewingContractDoc(activeShift)}
+                      className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      title="Ver Contrato de Prestação de Serviços (Freelance)"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-neutral-600" />
+                      <span>Ver Contrato</span>
+                    </button>
+
+                    <button
+                      onClick={() => setChatContract(activeShift)}
+                      className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Chat Turno</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-start gap-2.5 text-xs text-neutral-700 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
@@ -686,8 +700,16 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
                 </div>
 
                 <button
+                  onClick={() => setViewingContractDoc(contract)}
+                  className="px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition-colors cursor-pointer"
+                  title="Ver Contrato de Prestação de Serviços (Freelance)"
+                >
+                  <FileText className="w-3.5 h-3.5 text-neutral-600" />
+                </button>
+
+                <button
                   onClick={() => setChatContract(contract)}
-                  className="px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
+                  className="px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition-colors cursor-pointer"
                   title="Abrir Chat do Contrato"
                 >
                   <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
@@ -695,7 +717,7 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
 
                 <button
                   onClick={() => setSelectedContractForRating(contract)}
-                  className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 transition-colors shadow-xs"
+                  className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 transition-colors shadow-xs cursor-pointer"
                 >
                   {contract.freelancerReview ? 'Ver Avaliação' : 'Avaliar'}
                 </button>
@@ -704,6 +726,15 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
           ))}
         </div>
       </section>
+
+      {/* View Signed Service Contract Modal */}
+      {viewingContractDoc && (
+        <ServiceContractModal
+          isOpen={!!viewingContractDoc}
+          contract={viewingContractDoc}
+          onClose={() => setViewingContractDoc(null)}
+        />
+      )}
 
       {/* Rating Modal */}
       {selectedContractForRating && (

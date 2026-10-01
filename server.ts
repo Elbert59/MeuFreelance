@@ -538,6 +538,15 @@ class Database {
       notes: `Vaga originada do Mural de Diárias: ${opp.roleTitle}`,
     });
 
+    contract.termsAcceptedAt = new Date().toISOString();
+    contract.contractTermsSigned = true;
+    if (!contract.auditTrail) contract.auditTrail = [];
+    contract.auditTrail.push({
+      timestamp: new Date().toISOString(),
+      action: 'CONTRATO_TERMOS_ASSINADOS',
+      details: `Contrato de Prestação de Serviços (Freelance) aceito e assinado digitalmente por ${freela.name} com as 7 cláusulas contratuais de integridade e foro em Maringá - PR.`,
+    });
+
     opp.slotsRemaining = Math.max(0, opp.slotsRemaining - 1);
     if (opp.slotsRemaining === 0) opp.status = 'PREENCHIDA';
 

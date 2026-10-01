@@ -540,17 +540,20 @@ export const api = {
     }
 
     // Local fallback
-    return await this.createContract({
+    const fallback = await this.createContract({
       freelancerId: freelancer.id,
       companyId: 'comp-1',
-      companyName: 'Restaurante',
-      companyCnpj: '00.000.000/0001-00',
-      date: 'Hoje',
-      shiftHours: 'Turno Noturno',
-      venueAddress: 'Maringá, PR',
-      dailyRate: 300,
+      companyName: 'Izakaya Matsu Gastronomia',
+      companyCnpj: '18.492.302/0001-44',
+      date: 'Hoje (Turno Noturno)',
+      shiftHours: '18:00 - 00:00',
+      venueAddress: 'Av. Prudente de Morais, 820 · Zona 07, Maringá - PR',
+      dailyRate: 350,
       notes: 'Vaga originada do Mural de Diárias',
     });
+    fallback.termsAcceptedAt = new Date().toISOString();
+    fallback.contractTermsSigned = true;
+    return fallback;
   },
 
   /**

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { RatingModal } from './RatingModal';
 import { ContractChatModal } from './ContractChatModal';
+import { ServiceContractModal } from './ServiceContractModal';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   Loader2,
   AlertTriangle,
+  FileText,
 } from 'lucide-react';
 
 interface EscrowContractsViewProps {
@@ -38,6 +40,7 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
   const { session } = useAuth();
   const [selectedForReview, setSelectedForReview] = useState<Contract | null>(null);
   const [chatContract, setChatContract] = useState<Contract | null>(null);
+  const [viewingContractDoc, setViewingContractDoc] = useState<Contract | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
@@ -547,6 +550,15 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
 
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => setViewingContractDoc(contract)}
+                    className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 hover:text-neutral-900 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    title="Ver Contrato de Prestação de Serviços (Freelance)"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-neutral-600" />
+                    <span>Ver Contrato & Termos</span>
+                  </button>
+
+                  <button
                     onClick={() => setChatContract(contract)}
                     className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 hover:text-neutral-900 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
@@ -579,6 +591,15 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
           ))
         )}
       </div>
+
+      {/* View Signed Service Contract Modal */}
+      {viewingContractDoc && (
+        <ServiceContractModal
+          isOpen={!!viewingContractDoc}
+          contract={viewingContractDoc}
+          onClose={() => setViewingContractDoc(null)}
+        />
+      )}
 
       {selectedForReview && (
         <RatingModal

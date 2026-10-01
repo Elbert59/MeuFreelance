@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Freelancer, Contract } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { ServiceContractModal } from './ServiceContractModal';
 import {
   X,
   ShieldCheck,
@@ -33,6 +34,7 @@ export const HireModal: React.FC<HireModalProps> = ({
   const [notes, setNotes] = useState('Por favor, trazer facas próprias e avental. Chegada 15min antes para alinhamento.');
   const [loading, setLoading] = useState(false);
   const [createdContract, setCreatedContract] = useState<Contract | null>(null);
+  const [isViewingTermsModal, setIsViewingTermsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!freelancer) return null;
@@ -138,8 +140,17 @@ export const HireModal: React.FC<HireModalProps> = ({
 
             <div className="flex flex-col sm:flex-row gap-3 w-full">
               <button
+                type="button"
+                onClick={() => setIsViewingTermsModal(true)}
+                className="flex-1 py-3 px-4 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-800 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <FileText className="w-4 h-4 text-neutral-600" />
+                <span>Ver Contrato & Termos</span>
+              </button>
+
+              <button
                 onClick={onClose}
-                className="flex-1 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-sm transition-colors shadow-sm"
+                className="flex-1 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors shadow-xs cursor-pointer"
               >
                 Ver Contratos no Painel
               </button>
@@ -317,6 +328,14 @@ export const HireModal: React.FC<HireModalProps> = ({
           </form>
         )}
       </div>
+
+      {isViewingTermsModal && createdContract && (
+        <ServiceContractModal
+          isOpen={isViewingTermsModal}
+          contract={createdContract}
+          onClose={() => setIsViewingTermsModal(false)}
+        />
+      )}
     </div>
   );
 };

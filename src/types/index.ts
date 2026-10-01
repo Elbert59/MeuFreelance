@@ -93,6 +93,8 @@ export interface Contract {
   shiftComplianceStatus?: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDO_NO_HORARIO' | 'SAIDA_ANTECIPADA_AUTORIZADA' | 'HORARIO_INCOMPLETO';
   managerApprovedOut?: boolean; // Validação expressa do contratante
   earlyExitReason?: string; // Justificativa auditável em caso de saída antecipada autorizada
+  termsAcceptedAt?: string; // Data/Hora do aceite formal do Contrato de Prestação de Serviços (Freelance)
+  contractTermsSigned?: boolean; // Confirmação de assinatura digital das cláusulas contratuais
 }
 
 export interface UserSession {
