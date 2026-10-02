@@ -39,7 +39,7 @@ export function useAutoUpdate({
           !isRefreshingRef.current
         ) {
           isRefreshingRef.current = true;
-          console.log('[ChefMatch] Nova versão do servidor detectada. Atualizando aplicação...');
+          console.log('[TurnoExtra] Nova versão do servidor detectada. Atualizando aplicação...');
           // Force hard reload to pull latest JS bundles and HTML
           window.location.reload();
         }

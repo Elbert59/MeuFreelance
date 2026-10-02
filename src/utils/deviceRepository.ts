@@ -32,19 +32,19 @@ export interface DeviceCacheData {
 }
 
 const COOKIE_KEYS = {
-  DEVICE_ID: 'chefmatch_device_id',
-  DEVICE_NAME: 'chefmatch_device_name',
-  ROLE: 'chefmatch_device_role',
-  USER_ID: 'chefmatch_user_id',
-  USER_NAME: 'chefmatch_user_name',
-  LAST_SYNC: 'chefmatch_last_sync',
-  DEVICE_CASH: 'chefmatch_device_cash',
+  DEVICE_ID: 'turnoextra_device_id',
+  DEVICE_NAME: 'turnoextra_device_name',
+  ROLE: 'turnoextra_device_role',
+  USER_ID: 'turnoextra_user_id',
+  USER_NAME: 'turnoextra_user_name',
+  LAST_SYNC: 'turnoextra_last_sync',
+  DEVICE_CASH: 'turnoextra_device_cash',
 };
 
 const LOCAL_STORAGE_KEYS = {
-  DEVICE_INFO: 'chefmatch_device_info_v3',
-  DEVICE_CACHE: 'chefmatch_device_cache_v3',
-  OFFLINE_QUEUE: 'chefmatch_offline_queue_v3',
+  DEVICE_INFO: 'turnoextra_device_info_v3',
+  DEVICE_CACHE: 'turnoextra_device_cache_v3',
+  OFFLINE_QUEUE: 'turnoextra_offline_queue_v3',
 };
 
 // ==========================================
@@ -198,7 +198,7 @@ export const DeviceManager = {
     let id = CookieRepository.get(COOKIE_KEYS.DEVICE_ID);
     if (!id) {
       try {
-        id = localStorage.getItem('chefmatch_device_id_persisted');
+        id = localStorage.getItem('turnoextra_device_id_persisted');
       } catch {}
     }
 
@@ -208,7 +208,7 @@ export const DeviceManager = {
       id = `dev_${isMobile ? 'mobile' : 'desk'}_${Date.now().toString(36)}_${randomPart}`;
       CookieRepository.set(COOKIE_KEYS.DEVICE_ID, id, 365);
       try {
-        localStorage.setItem('chefmatch_device_id_persisted', id);
+        localStorage.setItem('turnoextra_device_id_persisted', id);
       } catch {}
     }
 

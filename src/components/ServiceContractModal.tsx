@@ -157,7 +157,7 @@ export const ServiceContractModal: React.FC<ServiceContractModalProps> = ({
           {/* Document Header & Title */}
           <div className="text-center pb-4 border-b border-neutral-200">
             <span className="text-[10px] font-sans font-bold tracking-widest text-neutral-500 uppercase block mb-1">
-              Plataforma B2B ChefMatch · Segurança Jurídica & Escrow
+              Plataforma B2B TurnoExtra · Segurança Jurídica & Escrow
             </span>
             <h1 className="text-base sm:text-lg font-black text-neutral-900 uppercase font-sans tracking-wide">
               CONTRATO DE PRESTAÇÃO DE SERVIÇOS (FREELANCE)
@@ -232,7 +232,7 @@ export const ServiceContractModal: React.FC<ServiceContractModalProps> = ({
                 por diária de trabalho.
               </p>
               <p className="text-justify text-neutral-600 pl-4 border-l-2 border-neutral-300 text-xs italic mt-1">
-                <strong>Parágrafo único:</strong> O valor pactuado já se encontra retido e custodiado preventivamente no Cofre Escrow da ChefMatch, sendo a transferência liberada via Pix ao(à) CONTRATADO(A) logo após o término do turno, cumprimento da jornada contratada e conferência presencial de encerramento pelo contratante.
+                <strong>Parágrafo único:</strong> O valor pactuado já se encontra retido e custodiado preventivamente no Cofre Escrow da TurnoExtra, sendo a transferência liberada via Pix ao(à) CONTRATADO(A) logo após o término do turno, cumprimento da jornada contratada e conferência presencial de encerramento pelo contratante.
               </p>
             </div>
 
@@ -317,7 +317,7 @@ export const ServiceContractModal: React.FC<ServiceContractModalProps> = ({
           {/* Electronic Audit Stamp */}
           <div className="p-3 rounded-xl bg-neutral-100 border border-neutral-200 text-[10px] font-mono text-neutral-600 flex flex-wrap items-center justify-between gap-2">
             <span>
-              Certificado Eletrônico B2B ChefMatch · Validade Jurídica MP 2.200-2/2001
+              Certificado Eletrônico B2B TurnoExtra · Validade Jurídica MP 2.200-2/2001
             </span>
             <span className="font-bold text-neutral-800">
               HASH: {contract?.escrowHash || `ESCROW-${Math.floor(1000 + Math.random() * 9000)}-SHA256`}

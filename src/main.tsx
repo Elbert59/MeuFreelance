@@ -8,11 +8,11 @@ const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
     // When Vite detects a new build, activate new service worker and refresh
-    console.log('[ChefMatch] Nova versão do app detectada! Atualizando automaticamente...');
+    console.log('[TurnoExtra] Nova versão do app detectada! Atualizando automaticamente...');
     updateSW(true);
   },
   onOfflineReady() {
-    console.log('[ChefMatch] Aplicativo pronto para uso offline');
+    console.log('[TurnoExtra] Aplicativo pronto para uso offline');
   },
   onRegisteredSW(_swUrl, registration) {
     if (registration) {

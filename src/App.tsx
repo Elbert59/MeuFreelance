@@ -250,7 +250,7 @@ function AppContent() {
             <ShieldCheck className="w-5 h-5 text-amber-600" />
           </div>
           <div className="flex-1 text-xs">
-            <span className="font-bold text-amber-900 block mb-0.5">Notificação ChefMatch</span>
+            <span className="font-bold text-amber-900 block mb-0.5">Notificação TurnoExtra</span>
             <p className="text-neutral-700">{toastMessage}</p>
           </div>
           <button
@@ -476,7 +476,7 @@ function AppContent() {
       <footer className="border-t border-neutral-200 bg-white py-8 px-4 sm:px-6 lg:px-8 mt-12 text-xs text-neutral-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-neutral-800">ChefMatch B2B</span>
+            <span className="font-bold text-neutral-800">TurnoExtra B2B</span>
             <span>·</span>
             <span>Marketplace de Diárias Gastronômicas com Escrow</span>
             <span>·</span>

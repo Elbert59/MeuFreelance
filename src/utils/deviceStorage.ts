@@ -14,16 +14,16 @@ export interface DeviceProfile {
 }
 
 const COOKIE_KEYS = {
-  DEVICE_ID: 'chefmatch_device_id',
-  ROLE: 'chefmatch_role',
-  USER_ID: 'chefmatch_user_id',
-  USER_NAME: 'chefmatch_user_name',
-  DEVICE_NAME: 'chefmatch_device_name',
+  DEVICE_ID: 'turnoextra_device_id',
+  ROLE: 'turnoextra_role',
+  USER_ID: 'turnoextra_user_id',
+  USER_NAME: 'turnoextra_user_name',
+  DEVICE_NAME: 'turnoextra_device_name',
 };
 
 const LOCAL_KEYS = {
-  PROFILE: 'chefmatch_device_profile_v1',
-  DEVICE_ID: 'chefmatch_device_id_v1',
+  PROFILE: 'turnoextra_device_profile_v1',
+  DEVICE_ID: 'turnoextra_device_id_v1',
 };
 
 export function getCookie(name: string): string | null {
@@ -98,7 +98,7 @@ export function getSavedDeviceProfile(): DeviceProfile | null {
       deviceId,
       role,
       userId,
-      userName: userName || 'Usuário ChefMatch',
+      userName: userName || 'Usuário TurnoExtra',
       deviceName: detectDeviceName(),
       lastActive: new Date().toISOString(),
     };

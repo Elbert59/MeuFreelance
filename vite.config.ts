@@ -24,8 +24,8 @@ export default defineConfig(() => {
         ],
         manifest: {
           id: base,
-          name: 'ChefMatch B2B - Freelancers da Gastronomia',
-          short_name: 'ChefMatch',
+          name: 'TurnoExtra B2B - Freelancers da Gastronomia',
+          short_name: 'TurnoExtra',
           description: 'Plataforma B2B para contratação ágil de freelancers na gastronomia com pagamento retido em garantia (Escrow), check-in de turno e avaliações mútuas.',
           theme_color: '#ffffff',
           background_color: '#ffffff',

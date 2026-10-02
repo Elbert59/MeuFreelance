@@ -18,8 +18,8 @@ interface AuthContextType {
   refreshUsers: () => Promise<void>;
 }
 
-const STORAGE_AUTH_KEY = 'chefmatch_auth_session_v2';
-const AUTH_STATUS_KEY = 'chefmatch_is_authenticated_v2';
+const STORAGE_AUTH_KEY = 'turnoextra_auth_session_v2';
+const AUTH_STATUS_KEY = 'turnoextra_is_authenticated_v2';
 const defaultCompany = MOCK_COMPANIES[0];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

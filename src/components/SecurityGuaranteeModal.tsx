@@ -39,7 +39,7 @@ export const SecurityGuaranteeModal: React.FC<SecurityGuaranteeModalProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-neutral-500">
-                Como a ChefMatch protege empresas e freelancers contra fraudes e prejuízos
+                Como a TurnoExtra protege empresas e freelancers contra fraudes e prejuízos
               </p>
             </div>
           </div>
@@ -152,7 +152,7 @@ export const SecurityGuaranteeModal: React.FC<SecurityGuaranteeModalProps> = ({
         {/* Footer */}
         <div className="px-6 py-3.5 border-t border-neutral-200 bg-neutral-50 flex items-center justify-between">
           <span className="text-[11px] text-neutral-500 font-mono">
-            ChefMatch Security Core v1.2 · Proteção Ativa
+            TurnoExtra Security Core v1.2 · Proteção Ativa
           </span>
           <button
             onClick={onClose}

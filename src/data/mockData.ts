@@ -390,7 +390,7 @@ export const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
     contractId: 'CTR-2026-081',
     senderRole: 'EMPRESA',
     senderName: 'Izakaya Matsu',
-    content: 'Boa tarde Kenji! Pagamento já está garantido no cofre da ChefMatch. Pode trazer sua faca Yanagiba?',
+    content: 'Boa tarde Kenji! Pagamento já está garantido no cofre da TurnoExtra. Pode trazer sua faca Yanagiba?',
     timestamp: '2026-09-28T14:35:00Z',
   },
   {

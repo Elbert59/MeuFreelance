@@ -26,6 +26,6 @@
     
     <!-- Fork & Knife crossed accent in center -->
     <circle cx="110" cy="105" r="28" fill="#ffffff" />
-    <text x="110" y="114" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="24" fill="#d97706" text-anchor="middle">CM</text>
+    <text x="110" y="114" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="24" fill="#d97706" text-anchor="middle">TE</text>
   </g>
 </svg>

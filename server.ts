@@ -560,7 +560,7 @@ class Database {
     this.addChatMessage({
       contractId: newContract.id,
       senderRole: 'EMPRESA',
-      senderName: 'Cofre Escrow ChefMatch',
+      senderName: 'Cofre Escrow TurnoExtra',
       content: `[Garantia B2B & Escrow] Contrato firmado. Horário contratado: ${payload.shiftHours} (${parsedHours.formattedDuration}). Valor 100% garantido em custódia. O freelancer gera o QR Code no app e a finalização é realizada exclusivamente pelo gerente. Hash: ${escrowHash}.`,
     });
 
@@ -756,8 +756,8 @@ class Database {
     let contractId = '';
     let actionType: 'CHECKIN' | 'CHECKOUT' = 'CHECKIN';
 
-    // 1. CHEFMATCH::[TYPE]::[CONTRACT_ID]::...
-    if (raw.startsWith('CHEFMATCH::')) {
+    // 1. TURNOEXTRA::[TYPE]::[CONTRACT_ID]::...
+    if (raw.startsWith('TURNOEXTRA::')) {
       const parts = raw.split('::');
       if (parts.length >= 3) {
         actionType = parts[1] as 'CHECKIN' | 'CHECKOUT';
@@ -772,8 +772,8 @@ class Database {
         actionType = obj.type || 'CHECKIN';
       } catch {}
     }
-    // 3. Short codes: CTR-2026-xxx or CM-xxxx
-    else if (raw.startsWith('CTR-') || raw.startsWith('CM-')) {
+    // 3. Short codes: CTR-2026-xxx or TE-xxxx
+    else if (raw.startsWith('CTR-') || raw.startsWith('TE-')) {
       const parts = raw.split(':');
       contractId = parts[0];
       if (parts[1] === 'OUT' || parts[1] === 'CHECKOUT') {
@@ -872,7 +872,7 @@ class Database {
       escrowTotal: safeDailyRate + Math.round(safeDailyRate * 0.08),
       requiredSkills: ['Agilidade', 'Boas Práticas'],
       urgent: true,
-      description: payload.description ? sanitizeInput(payload.description, 400) : 'Diária presencial confirmada via ChefMatch.',
+      description: payload.description ? sanitizeInput(payload.description, 400) : 'Diária presencial confirmada via TurnoExtra.',
     };
 
     this.opportunities.unshift(newOpp);
@@ -1032,8 +1032,8 @@ async function startServer() {
   // Real-Time SSE Stream Endpoint (/api/realtime/stream)
   // ==========================================
   app.get('/api/realtime/stream', (req: Request, res: Response) => {
-    const deviceId = (req.query.deviceId as string) || req.cookies?.['chefmatch_device_id'] || `dev_${Date.now()}`;
-    const role = (req.query.role as string) || req.cookies?.['chefmatch_device_role'] || 'EMPRESA';
+    const deviceId = (req.query.deviceId as string) || req.cookies?.['turnoextra_device_id'] || `dev_${Date.now()}`;
+    const role = (req.query.role as string) || req.cookies?.['turnoextra_device_role'] || 'EMPRESA';
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || '127.0.0.1';
     const userAgent = req.headers['user-agent'] || 'Desconhecido';
     const clientId = `client_${deviceId}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
@@ -1094,9 +1094,9 @@ async function startServer() {
   app.post('/api/devices/handshake', (req: Request, res: Response) => {
     try {
       const body = req.body || {};
-      const cookieDeviceId = req.cookies?.['chefmatch_device_id'];
+      const cookieDeviceId = req.cookies?.['turnoextra_device_id'];
       const deviceId = body.deviceId || cookieDeviceId || `dev_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
-      const role = body.role || req.cookies?.['chefmatch_device_role'] || 'EMPRESA';
+      const role = body.role || req.cookies?.['turnoextra_device_role'] || 'EMPRESA';
       const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || '127.0.0.1';
       const userAgent = req.headers['user-agent'] || '';
 
@@ -1119,10 +1119,10 @@ async function startServer() {
         path: '/',
       };
 
-      res.cookie('chefmatch_device_id', deviceId, cookieOptions);
-      res.cookie('chefmatch_device_role', session.role, cookieOptions);
-      res.cookie('chefmatch_user_id', session.userId, cookieOptions);
-      res.cookie('chefmatch_user_name', session.userName, cookieOptions);
+      res.cookie('turnoextra_device_id', deviceId, cookieOptions);
+      res.cookie('turnoextra_device_role', session.role, cookieOptions);
+      res.cookie('turnoextra_user_id', session.userId, cookieOptions);
+      res.cookie('turnoextra_user_name', session.userName, cookieOptions);
 
       res.json(session);
     } catch (e: any) {
@@ -1195,7 +1195,7 @@ async function startServer() {
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({
       status: 'ok',
-      service: 'ChefMatch Multi-Device Secured Backend',
+      service: 'TurnoExtra Multi-Device Secured Backend',
       version: '2.5.0',
       uptime: process.uptime(),
       onlineDevices: realtimeHub.getOnlineCount(),
@@ -1515,11 +1515,11 @@ async function startServer() {
 
   // Start HTTP Listener
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[ChefMatch Multi-Device Backend] Server listening at http://0.0.0.0:${PORT}`);
+    console.log(`[TurnoExtra Multi-Device Backend] Server listening at http://0.0.0.0:${PORT}`);
   });
 }
 
 startServer().catch((err) => {
-  console.error('[ChefMatch Multi-Device Backend] Startup error:', err);
+  console.error('[TurnoExtra Multi-Device Backend] Startup error:', err);
   process.exit(1);
 });

@@ -60,12 +60,12 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-md py-1"
           >
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center font-black text-white text-base shadow-sm">
-              CM
+              TE
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-bold tracking-tight text-neutral-900 font-sans">
-                  ChefMatch <span className="text-amber-600 font-extrabold text-sm tracking-wider">B2B</span>
+                  TurnoExtra <span className="text-amber-600 font-extrabold text-sm tracking-wider">B2B</span>
                 </span>
                 <button
                   type="button"
