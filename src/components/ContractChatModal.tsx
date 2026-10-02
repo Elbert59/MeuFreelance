@@ -76,7 +76,7 @@ export const ContractChatModal: React.FC<ContractChatModalProps> = ({ contract, 
         <div className="bg-emerald-50 px-4 py-1.5 border-b border-emerald-100 text-[10px] text-emerald-800 flex items-center justify-between">
           <span className="flex items-center gap-1 font-medium">
             <ShieldCheck className="w-3 h-3 text-emerald-600" />
-            Canal protegido ChefMatch B2B
+            Canal protegido TurnoExtra B2B
           </span>
           <span className="font-mono font-semibold">R$ {contract.dailyRate} em Escrow</span>
         </div>

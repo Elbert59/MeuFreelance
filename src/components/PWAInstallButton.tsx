@@ -36,10 +36,10 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-amber-500 text-neutral-950 flex items-center justify-center font-bold text-sm shadow-xs">
-              CM
+              TE
             </div>
             <div>
-              <h3 className="text-sm font-bold text-neutral-900">Instalar ChefMatch</h3>
+              <h3 className="text-sm font-bold text-neutral-900">Instalar TurnoExtra</h3>
               <p className="text-[11px] text-neutral-500">Usar como aplicativo no celular</p>
             </div>
           </div>
@@ -53,7 +53,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
 
         <div className="py-4 space-y-3.5 text-xs text-neutral-700">
           <p className="text-neutral-600">
-            Adicione o <strong>ChefMatch B2B</strong> à tela de início do seu celular para acesso instantâneo às diárias, check-in por GPS e notificações:
+            Adicione o <strong>TurnoExtra B2B</strong> à tela de início do seu celular para acesso instantâneo às diárias, check-in por GPS e notificações:
           </p>
 
           <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2.5">
@@ -111,7 +111,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             </div>
             <div>
               <h4 className="text-xs sm:text-sm font-bold text-neutral-900 flex items-center gap-1.5">
-                <span>Instale o ChefMatch no seu Celular (PWA)</span>
+                <span>Instale o TurnoExtra no seu Celular (PWA)</span>
                 <span className="text-[10px] font-semibold bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-full">App Mobile</span>
               </h4>
               <p className="text-[11px] sm:text-xs text-neutral-600">

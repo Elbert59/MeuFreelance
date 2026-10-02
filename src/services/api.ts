@@ -18,11 +18,11 @@ import {
 } from '../data/mockData';
 
 const STORAGE_KEYS = {
-  CONTRACTS: 'chefmatch_contracts_v3',
-  FREELANCERS: 'chefmatch_freelancers_v3',
-  COMPANIES: 'chefmatch_companies_v3',
-  OPPORTUNITIES: 'chefmatch_opportunities_v3',
-  MESSAGES: 'chefmatch_messages_v3',
+  CONTRACTS: 'turnoextra_contracts_v3',
+  FREELANCERS: 'turnoextra_freelancers_v3',
+  COMPANIES: 'turnoextra_companies_v3',
+  OPPORTUNITIES: 'turnoextra_opportunities_v3',
+  MESSAGES: 'turnoextra_messages_v3',
 };
 
 // Local storage caching for offline PWA support

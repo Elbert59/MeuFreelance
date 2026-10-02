@@ -76,8 +76,8 @@ function createPNG(width, height, drawFn) {
   return Buffer.concat([signature, ihdrChunk, idatChunk, iendChunk]);
 }
 
-// Drawing ChefMatch Icon with golden-amber background and emblem
-function drawChefMatchIcon(x, y, w, h, isMaskable = false) {
+// Drawing TurnoExtra Icon with golden-amber background and emblem
+function drawTurnoExtraIcon(x, y, w, h, isMaskable = false) {
   const cx = w / 2;
   const cy = h / 2;
   const dx = x - cx;
@@ -138,16 +138,16 @@ if (!fs.existsSync(publicDir)) {
 // Generate PWA Icons
 console.log('Generating PWA icons...');
 
-const icon192 = createPNG(192, 192, (x, y, w, h) => drawChefMatchIcon(x, y, w, h, false));
+const icon192 = createPNG(192, 192, (x, y, w, h) => drawTurnoExtraIcon(x, y, w, h, false));
 fs.writeFileSync(path.join(publicDir, 'pwa-192x192.png'), icon192);
 
-const icon512 = createPNG(512, 512, (x, y, w, h) => drawChefMatchIcon(x, y, w, h, false));
+const icon512 = createPNG(512, 512, (x, y, w, h) => drawTurnoExtraIcon(x, y, w, h, false));
 fs.writeFileSync(path.join(publicDir, 'pwa-512x512.png'), icon512);
 
-const iconMaskable = createPNG(512, 512, (x, y, w, h) => drawChefMatchIcon(x, y, w, h, true));
+const iconMaskable = createPNG(512, 512, (x, y, w, h) => drawTurnoExtraIcon(x, y, w, h, true));
 fs.writeFileSync(path.join(publicDir, 'pwa-maskable-512x512.png'), iconMaskable);
 
-const appleIcon = createPNG(180, 180, (x, y, w, h) => drawChefMatchIcon(x, y, w, h, false));
+const appleIcon = createPNG(180, 180, (x, y, w, h) => drawTurnoExtraIcon(x, y, w, h, false));
 fs.writeFileSync(path.join(publicDir, 'apple-touch-icon.png'), appleIcon);
 
 console.log('All PWA icons generated successfully in public/');

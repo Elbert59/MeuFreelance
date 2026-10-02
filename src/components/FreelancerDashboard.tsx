@@ -369,7 +369,7 @@ export const FreelancerDashboard: React.FC<FreelancerDashboardProps> = ({
 
                   <div className="pt-2 border-t border-neutral-200 text-[11px] text-neutral-500 flex items-center justify-between">
                     <span>Cofre Escrow Garantido:</span>
-                    <span className="text-emerald-700 font-medium">100% Coberto pela ChefMatch</span>
+                    <span className="text-emerald-700 font-medium">100% Coberto pela TurnoExtra</span>
                   </div>
                 </div>
 

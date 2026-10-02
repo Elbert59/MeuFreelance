@@ -427,7 +427,7 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
               {activeTab === 'manual' && (
                 <form onSubmit={handleManualSubmit} className="space-y-4 py-2">
                   <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 leading-relaxed">
-                    <strong>Validação Manual Resiliente:</strong> Digite ou cole o código que aparece abaixo do QR code na tela do freelancer (ex: <span className="font-mono font-bold">CTR-2026-xxx</span> ou <span className="font-mono font-bold">CM-8492</span>).
+                    <strong>Validação Manual Resiliente:</strong> Digite ou cole o código que aparece abaixo do QR code na tela do freelancer (ex: <span className="font-mono font-bold">CTR-2026-xxx</span> ou <span className="font-mono font-bold">TE-8492</span>).
                   </div>
 
                   <div>
@@ -438,7 +438,7 @@ export const ManagerQrScannerModal: React.FC<ManagerQrScannerModalProps> = ({
                       type="text"
                       value={manualCodeInput}
                       onChange={(e) => setManualCodeInput(e.target.value)}
-                      placeholder="Ex: CM-8492 ou CTR-2026-101"
+                      placeholder="Ex: TE-8492 ou CTR-2026-101"
                       className="w-full px-4 py-3 text-sm font-mono rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500 uppercase"
                       autoFocus
                     />

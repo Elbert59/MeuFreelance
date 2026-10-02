@@ -11,13 +11,13 @@ export interface ParsedQrData {
 
 /**
  * Computes a human-friendly 6-character pairing code based on contract ID.
- * Example: 'CM-8492'
+ * Example: 'TE-8492'
  */
 export function generatePairingCode(contractId: string): string {
   const hash = contractId
     .split('')
     .reduce((acc, char) => (acc * 37 + char.charCodeAt(0)) % 9000, 1000);
-  return `CM-${hash}`;
+  return `TE-${hash}`;
 }
 
 /**
@@ -37,7 +37,7 @@ export function generateDiariaQrToken(
     .toString(16)
     .toUpperCase();
 
-  return `CHEFMATCH::${type}::${contractId}::${freelancerId}::${timestamp}::${pairingCode}::${checksum}`;
+  return `TURNOEXTRA::${type}::${contractId}::${freelancerId}::${timestamp}::${pairingCode}::${checksum}`;
 }
 
 /**
@@ -48,8 +48,8 @@ export function parseDiariaQrToken(raw: string, fallbackContractId?: string): Pa
   if (!raw || typeof raw !== 'string') return null;
   const clean = raw.trim();
 
-  // 1. Standard CHEFMATCH format
-  if (clean.startsWith('CHEFMATCH::')) {
+  // 1. Standard TURNOEXTRA format
+  if (clean.startsWith('TURNOEXTRA::')) {
     const parts = clean.split('::');
     if (parts.length >= 4) {
       const type = parts[1] as 'CHECKIN' | 'CHECKOUT';
@@ -86,7 +86,7 @@ export function parseDiariaQrToken(raw: string, fallbackContractId?: string): Pa
   }
 
   // 3. URL format fallback
-  if (clean.includes('contractId=') || clean.includes('chefmatch.app')) {
+  if (clean.includes('contractId=') || clean.includes('turnoextra.app')) {
     try {
       const url = new URL(clean, 'http://localhost');
       const cid = url.searchParams.get('contractId') || url.searchParams.get('cid');
@@ -107,7 +107,7 @@ export function parseDiariaQrToken(raw: string, fallbackContractId?: string): Pa
   }
 
   // 4. Contract ID or Pairing code fallback
-  if (clean.startsWith('CTR-') || clean.startsWith('CM-')) {
+  if (clean.startsWith('CTR-') || clean.startsWith('TE-')) {
     return {
       type: 'CHECKIN', // default, receiver will detect contract status
       contractId: clean,

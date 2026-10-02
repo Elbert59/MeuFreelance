@@ -377,7 +377,7 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50/50 border border-emerald-200 text-xs">
                 <div className="flex items-center gap-1.5 text-emerald-900 font-semibold text-[11px]">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Custódia Blindada ChefMatch</span>
+                  <span>Custódia Blindada TurnoExtra</span>
                   <span className="text-neutral-400">·</span>
                   <span className="text-neutral-500 font-normal">Liberação condicionada a check-in e check-out presenciais</span>
                 </div>
@@ -603,7 +603,7 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                       className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
                     >
                       <Star className="w-3.5 h-3.5 fill-neutral-950" />
-                      <span>Avaliar Profissional (Uber)</span>
+                      <span>Avaliar Profissional</span>
                     </button>
                   )}
 

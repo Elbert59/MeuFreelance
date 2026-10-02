@@ -279,7 +279,7 @@ export const HireModal: React.FC<HireModalProps> = ({
                     Como funciona o Cofre Escrow da Plataforma?
                   </h5>
                   <p className="text-[11px] text-neutral-700 mt-0.5 leading-relaxed">
-                    Você faz o pagamento agora. O valor <strong>fica retido com segurança</strong> na conta gráfica da ChefMatch. O freelancer só tem o valor transferido após a conclusão do expediente e validação do check-out. Se o profissional não comparecer, o valor é 100% estornado.
+                    Você faz o pagamento agora. O valor <strong>fica retido com segurança</strong> na conta gráfica da TurnoExtra. O freelancer só tem o valor transferido após a conclusão do expediente e validação do check-out. Se o profissional não comparecer, o valor é 100% estornado.
                   </p>
                 </div>
               </div>

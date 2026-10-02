@@ -112,7 +112,7 @@ export function isAllowedStatusTransition(current: ContractStatus, next: Contrac
  */
 export function generateEscrowAuditHash(contractId: string, amount: number, timestamp: string): string {
   let hash = 0;
-  const str = `CHEFMATCH_ESCROW_${contractId}_R$${amount.toFixed(2)}_${timestamp}`;
+  const str = `TURNOEXTRA_ESCROW_${contractId}_R$${amount.toFixed(2)}_${timestamp}`;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
@@ -164,7 +164,7 @@ export function parseShiftHours(shiftHours: string): {
  */
 export function generateShiftPin(seed: string, offset = 0): string {
   let hash = 0;
-  const str = `CHEFMATCH_PIN_${seed}_${offset}`;
+  const str = `TURNOEXTRA_PIN_${seed}_${offset}`;
   for (let i = 0; i < str.length; i++) {
     hash = (hash << 5) - hash + str.charCodeAt(i);
     hash |= 0;
