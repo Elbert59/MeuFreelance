@@ -21,7 +21,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
 
   return (
     <div className="group rounded-xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-lg transition-all duration-200 flex flex-col justify-between overflow-hidden shadow-xs">
-      {/* Header with Photo/Avatar + Rating Uber Style */}
+      {/* Header with Photo/Avatar + Rating */}
       <div className="p-5">
         <div className="flex items-start gap-3.5 mb-3.5">
           {/* Avatar representation with gastronomy badge */}
@@ -51,7 +51,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
             )}
           </div>
 
-          {/* Name & Uber-style Rating */}
+          {/* Name & Rating */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-1">
               <h3 className="text-base font-bold text-neutral-900 truncate group-hover:text-amber-700 transition-colors">
@@ -68,7 +68,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
               {freelancer.role}
             </p>
 
-            {/* Uber-style Rating Score & Gigs */}
+            {/* Rating Score & Gigs */}
             <div className="flex items-center gap-1.5 mt-1.5 text-xs">
               <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-bold font-mono">
                 <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />

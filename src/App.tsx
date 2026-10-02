@@ -180,7 +180,7 @@ function AppContent() {
     } else if (updatedContract.status === 'VALOR_LIBERADO') {
       showToast(`Turno finalizado! Valor de R$ ${updatedContract.dailyRate.toFixed(2)} liberado via Pix.`);
     } else if (updatedContract.companyReview || updatedContract.freelancerReview) {
-      showToast(`Avaliação estilo Uber registrada com sucesso!`);
+      showToast(`Avaliação do turno registrada com sucesso!`);
     }
   };
 

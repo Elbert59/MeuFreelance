@@ -115,7 +115,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-neutral-900">
-                Avaliação do Turno (Estilo Uber)
+                Avaliação do Turno
               </h2>
               <p className="text-xs text-neutral-500">
                 {isFreelancerReviewing ? 'Como foi trabalhar neste restaurante?' : 'Como foi o desempenho do profissional?'}

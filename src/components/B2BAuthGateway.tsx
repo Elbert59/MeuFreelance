@@ -162,7 +162,7 @@ export const B2BAuthGateway: React.FC<B2BAuthGatewayProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span><strong>Avaliações Estilo Uber:</strong> histórico transparente de pontualidade e postura.</span>
+                <span><strong>Avaliações do Turno:</strong> histórico transparente de pontualidade e postura.</span>
               </div>
             </div>
           </div>

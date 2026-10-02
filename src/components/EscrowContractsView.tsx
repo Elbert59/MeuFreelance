@@ -603,7 +603,7 @@ export const EscrowContractsView: React.FC<EscrowContractsViewProps> = ({
                       className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
                     >
                       <Star className="w-3.5 h-3.5 fill-neutral-950" />
-                      <span>Avaliar Profissional (Uber)</span>
+                      <span>Avaliar Profissional</span>
                     </button>
                   )}
 
